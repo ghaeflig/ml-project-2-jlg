@@ -1,16 +1,17 @@
 import torch
 import torchvision
+import numpy as np
 
 
 ############################ PREPROCESSING ###########################################
-def value_to_class(v, foreground_threshold): 
+def value_to_class(v, foreground_threshold):
     """ Get a one-hot vector for the classes """
     df = np.sum(v)
     if df > foreground_threshold:
         return 1
     else:
         return 0
-    
+
 def img_crop(im, w, h):
     list_patches = []
     imgwidth = im.shape[0]
@@ -23,7 +24,7 @@ def img_crop(im, w, h):
             else:
                 im_patch = im[j:j+w, i:i+h, :]
             list_patches.append(im_patch)
-    return list_patches 
+    return list_patches
 
 def transform(imgs, gt_imgs):
     # Compute features for each image patch
@@ -45,19 +46,19 @@ def transform(imgs, gt_imgs):
     # Print feature statistics
     print('Computed ' + str(X.shape[0]) + ' features')
     print('Feature dimension = ' + str(X.shape[1]))
-    print('Number of classes = ' + str(np.max(Y)))  #TODO: fix, length(unique(Y)) 
+    print('Number of classes = ' + str(np.max(Y)))  #TODO: fix, length(unique(Y))
 
     Y0 = [i for i, j in enumerate(Y) if j == 0]
     Y1 = [i for i, j in enumerate(Y) if j == 1]
     print('Class 0: ' + str(len(Y0)) + ' samples')
     print('Class 1: ' + str(len(Y1)) + ' samples')
 
-    # Display a patch that belongs to the foreground class i.e with ones 
+    # Display a patch that belongs to the foreground class i.e with ones
     plt.imshow(gt_patches[Y1[2]], cmap='Greys_r')
 
     # Display a patch that belongs to the background class i.e mostly zeros
     #plt.imshow(gt_patches[Y0[2]], cmap='Greys_r')
-    
+
     # Balancing and extract features?
     return img_patches, gt_patches
 
@@ -68,7 +69,7 @@ def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
 
 def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
-    model.load_state_dict(checkpoint["state_dict"]) 
+    model.load_state_dict(checkpoint["state_dict"])
 
 
 
@@ -85,18 +86,12 @@ def check_accuracy(loader, model, device="cuda"):
             preds = (preds > 0.5).float
             num_correct += (preds == y).sum
             num_pixels += torch.numel(preds)
-            
+
     print(f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels*100}:.2f")
     model.train()
 
 
 
-    
+
 def save_predictions_as_imgs(s):
     s=3
-    
-
-
-    
-
-    
