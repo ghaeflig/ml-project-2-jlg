@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 from helpers import value_to_class
-from helpers import transform
+from data_augmentation import transform
 
 class ImgDataset(Dataset):
     """ Dataset loader
@@ -31,20 +31,16 @@ class ImgDataset(Dataset):
         return len(self.ids)
 
     def __getitem__(self, index):
-        print(f'index: {index}')
-        print(f'len(ids): {len(self.ids)}')
-        assert index in np.arange(len(self.ids))
         idx = self.ids[index]
         image_path = os.path.join(self.image_dir, self.images[idx])
         gt_path = os.path.join(self.gt_dir, self.images[idx])
         image = np.array(Image.open(image_path).convert("RGB"))
         gt = np.array(Image.open(gt_path).convert("L"), dtype=np.float32)
-        gt = value_to_class(np.mean(gt), 0.25) # for val too?
-        #if transform is not None:
-            #image, gt = tranform(image, gt) # returns a vector of values is ok? need to change self.images?
-    # Preprocessing: data augmentation, balancing, cut in patches = transform ?
-
-
+        #gt = value_to_class(np.mean(gt), 0.25) # for val too?
+        if transform is not None:
+            image, gt = transform(image, gt) # returns a vector of values is ok? need to change self.images?
+            # Preprocessing: data augmentation, balancing, cut in patches = transform ?
+        return image, gt
 
 class TestDataset(Dataset):
     """ Test dataset loader
@@ -60,3 +56,4 @@ class TestDataset(Dataset):
     def __getitem__(self, index):
         image_path = os.path.join(self.dir, self.ids[index])
         image = np.array(Image.open(image_path).convert("RGB"))
+        return image

@@ -17,7 +17,7 @@ TRAINING_SIZE = 20
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16  # 64
-NUM_EPOCHS = 100
+NUM_EPOCHS = 2
 RESTORE_MODEL = False  # If True, restore existing model instead of training a new one
 RECORDING_STEP = 0
 PATCH_SIZE = 16
@@ -51,7 +51,7 @@ def make_img_overlay(img, predicted_img): #superposition
     new_img = Image.blend(background, overlay, 0.2)
     return new_img
 
-def accuracy(pred, y) :
+def check_accuracy(pred, y):
     pred = (pred > 0.5).float()
     num_correct = 0
     num_pixels = 0
@@ -59,22 +59,23 @@ def accuracy(pred, y) :
     num_pixels += torch.numel(pred)
     return num_correct/num_pixels*100
 
-def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, writer=True, device=DEVICE) : #rajouter scaler if cuda
+def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, writer=None, device=DEVICE) : #rajouter scaler if cuda
     model.train()
     train_loss = 0
     accuracies = 0
     #it = 0
-    # batch_x = train images and batch_y = train masks
+    #batch_x = train images and batch_y = train masks
     for batch_x, batch_y in train_loader:
+        batch_x = batch_x.permute(0, 3, 2, 1).float()
         batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-
         # Evaluate the network (forward pass)
-        pred = model(batch_x)
+        pred = model(batch_x).squeeze(1)
 
         # Compute the loss and the gradient
         loss = criterion(pred, batch_y)
         train_loss += float(loss.item())
-        accuracies += accuracy(torch.sigmoid(pred), batch_y)   #jsp s'il faut sigmoid ici ??
+        acc = check_accuracy(torch.sigmoid(pred), batch_y)
+        accuracies += acc   #jsp s'il faut sigmoid ici ??
         optimizer.zero_grad()
         loss.backward()
 
@@ -105,7 +106,7 @@ def train_val(val_loader, model, epoch, writer=None, device = DEVICE) :
         for batch_x, batch_y in val_loader :
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
             pred = torch.sigmoid(model(batch_x))
-            accuracies += accuracy(pred, batch_y)
+            accuracies += check_accuracy(pred, batch_y)
 
     accuracy_avg = accuracies/len(val_loader)
     if writer is not None :

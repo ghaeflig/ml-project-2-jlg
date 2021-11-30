@@ -74,24 +74,5 @@ def load_checkpoint(checkpoint, model):
 
 
 ############################ MODEL PERFORMANCE EVALUATION ###################################
-def check_accuracy(loader, model, device="cuda"):
-    num_correct = 0
-    num_pixels = 0
-    model.eval()
-    with torch.no_grad():
-        for x, y in loader:
-            x = x.to(device)
-            y = y.to(device)
-            preds = torch.sigmoid(model(x))
-            preds = (preds > 0.5).float
-            num_correct += (preds == y).sum
-            num_pixels += torch.numel(preds)
-
-    print(f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels*100}:.2f")
-    model.train()
-
-
-
-
 def save_predictions_as_imgs(s):
     s=3
