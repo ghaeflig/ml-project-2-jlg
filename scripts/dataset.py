@@ -20,11 +20,11 @@ class ImgDataset(Dataset):
         n = len(ids)
         if self.mode == "train" :
             self.ids = ids[0:int(n * split_ratio)]
-            print(f'ids: {self.ids}')
+            #print(f'ids: {self.ids}')
         if self.mode == "val":
             self.ids = ids[int(n * split_ratio):n]
-            print(f'ids: {self.ids}')
-            print(f'TEST index 0 val: {self.ids[0]-1}')
+            #print(f'ids: {self.ids}')
+            #print(f'TEST index 0 val: {self.ids[0]-1}')
 
         self.images = os.listdir(image_dir) #list all files in that folder
         self.gt = os.listdir(gt_dir)
@@ -34,9 +34,9 @@ class ImgDataset(Dataset):
         return len(self.ids)
 
     def __getitem__(self, index):
-        print(f'index: {index}')
+        #print(f'index: {index}')
         idx = self.ids[index]-1 # bc index [0,99] and ids [1,100] and images[idx] needs [0,99]
-        print(f'idx: {idx}')
+        #print(f'idx: {idx}')
         image_path = os.path.join(self.image_dir, self.images[idx])
         gt_path = os.path.join(self.gt_dir, self.images[idx])
         image = np.array(Image.open(image_path).convert("RGB"))

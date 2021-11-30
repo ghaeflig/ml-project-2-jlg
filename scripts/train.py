@@ -1,12 +1,14 @@
 import numpy as np
 import os, sys
+import torch.optim as optim
+import copy
 from torch.utils import data
 from dataset import ImgDataset
 from dataset import TestDataset
 from helpers import *
 from model import UNET
 from torch.utils.tensorboard import SummaryWriter
-import torch.optim as optim
+
 
 # Hyperparameters etc.
 """"
@@ -53,7 +55,7 @@ def check_accuracy(pred, y):
     num_pixels = 0
     num_correct += (pred == y).sum()
     num_pixels += torch.numel(pred)
-    return num_correct/num_pixels*100
+    return num_correct/num_pixels
 
 def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, writer=None, device=DEVICE) : 
     model.train()
@@ -127,6 +129,7 @@ def training(train_loader, val_loader, print_err=True) :
     else :
         print("\nYou are running the training of the data on a GPU")
 
+    max_accuracy = 0   
     model = UNET(in_channels=3, out_channels=1).to(DEVICE) # peut etre a mettre model en parametres de la fonction
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -139,21 +142,20 @@ def training(train_loader, val_loader, print_err=True) :
         print("\nAs you are on a GPU, a scaler is added to the training in order to prevent underflow")
     
     for epoch in range(NUM_EPOCHS):
-        print("epoch : {} / {}".format(epoch+1, NUM_EPOCHS))
-        max_accuracy = 0
+        print("\nEpoch : {} / {}".format(epoch+1, NUM_EPOCHS))
         train_loss, accuracy_train = train_func(train_loader, model, epoch, criterion, optimizer, scaler, writer)
         accuracy = train_val(val_loader, model, epoch, writer)
 
         if (print_err == True) :
-            print("\nEpoch {} | Train loss: {:.5f} and train accuracy: {:.5f}".format(epoch, train_loss, accuracy_train))
-            print("\nEpoch {} | Validation accuracy: {:.5f}".format(epoch, accuracy))
+            print("\nEpoch {} | Train loss: {:.5f} and train accuracy: {:.5f}".format(epoch+1, train_loss, accuracy_train))
+            print("Epoch {} | Validation accuracy: {:.5f}".format(epoch+1, accuracy))
         #scheduler.step()
         if accuracy > max_accuracy :
-            max_accuracy = accuracy.copy()
-            max_accuracy_epoch = epoch.copy()
+            max_accuracy = accuracy.clone() #à verifier 
+            max_accuracy_epoch = copy.deepcopy(epoch) 
             torch.save(model.state_dict(),  OUTPUT_DIR + '/parameters.pt') #.pt or .plk
 
-    print("\nThe maximum accuracy over all epochs is {} at epoch {}.".format(max_accuracy, epoch))
+    print("\nThe maximum accuracy over all epochs is {} at epoch {}.".format(max_accuracy, max_accuracy_epoch+1))
     print("\nThe best model over all epochs is saved into folder name {} with name parameters.pt".format(OUTPUT_DIR))
 
 
@@ -169,9 +171,7 @@ def training(train_loader, val_loader, print_err=True) :
 
 
 def trained_model(output_dir=OUTPUT_DIR) :
-    return os.path.isdir(output_dir)
-
-                  
+    return os.path.isdir(output_dir)                
 
 def main() :
     root_dir = "../data/training/"
@@ -186,18 +186,21 @@ def main() :
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
     
-    #if (trained_model() and not(RESTORE_MODEL)) : 
-    #    print("\nThis model has already been trained and it will be loaded from the corresponding output folder...")
-    #    model.load_state_dict(torch.load(OUTPUT_DIR + 'parameters.pt'))
-    #else :
-    #    if (RESTORE_MODEL and trained_model()) : 
-    #          print("\nYou choose to restore a model that has been already saved...")
-    #    if (not(RESTORE_MODEL)) : 
-    #          os.mkdir(OUTPUT_DIR)
-    #    training(train_loader, val_loader)
+    if (trained_model() and not(RESTORE_MODEL)) : 
+        print("\nThis model has already been trained and the parameters can be loaded from the corresponding output folder : {}".format(OUTPUT_DIR))
+        #model.load_state_dict(torch.load(OUTPUT_DIR + 'parameters.pt'))
+    else :
+        if (RESTORE_MODEL and trained_model()) : 
+              print("\nYou choose to restore a model that has been already saved...")
+              print("\nThe results will be in the folder whose name is : {}".format(OUTPUT_DIR))
+              os.mkdir(OUTPUT_DIR + '_restored')
+        if (not(RESTORE_MODEL)) : 
+              os.mkdir(OUTPUT_DIR)
+              print("\n Creating the output directory : {} in which you will find the parameters of the trained model (parameters.pt)".format(OUTPUT_DIR))
+        training(train_loader, val_loader)
     
-    os.mkdir(OUTPUT_DIR)
-    training(train_loader, val_loader)
+    #os.mkdir(OUTPUT_DIR)
+    #training(train_loader, val_loader)
 
               
 if __name__ == "__main__":
