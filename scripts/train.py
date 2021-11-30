@@ -25,8 +25,8 @@ PIN_MEMORY = True
 
 SEED = 66478
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-NUM_EPOCHS = 2 #100
-BATCH_SIZE = 64 #64 
+NUM_EPOCHS = 10 #100
+BATCH_SIZE = 8 #64 
 LEARNING_RATE = 1e-4
 RESTORE_MODEL = False  # If True, restore existing model instead of training a new one
 OUTPUT_DIR = '../outputs/output_NE{}_BS{}_LR{}'.format(NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE) # change in function of the paramters that are used to run the training 
@@ -68,11 +68,12 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
         
         # Evaluate the network (forward pass)
         pred = model(batch_x).squeeze(1)
+        pred = torch.sigmoid(pred)
         
         # Compute the loss and the gradient
         loss = criterion(pred, batch_y)
         train_loss += float(loss.item())
-        acc = check_accuracy(torch.sigmoid(pred), batch_y)
+        acc = check_accuracy(pred, batch_y)
         accuracies += acc   #jsp s'il faut sigmoid ici ??
         optimizer.zero_grad()
         loss.backward()
@@ -108,7 +109,8 @@ def train_val(val_loader, model, epoch, writer=None, device = DEVICE) :
             print("it num for train val func : {} / {}.".format(it, len(val_loader)))
             batch_x = batch_x.permute(0, 3, 2, 1).float()
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-            pred = torch.sigmoid(model(batch_x))
+            pred = model(batch_x).squeeze(1)
+            pred = torch.sigmoid(pred)
             accuracies += check_accuracy(pred, batch_y)
             it = it + 1
 
