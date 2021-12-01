@@ -6,10 +6,10 @@ class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DoubleConv, self).__init__()
         # 3 1 1 = kernel, stride, padding
-        self.conv = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=False),
+        self.conv = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=True),
                                   nn.BatchNorm2d(out_channels),
                                   nn.ReLU(inplace=True),
-                                  nn.Conv2d(out_channels, out_channels, 3, 1, 1, bias=False),
+                                  nn.Conv2d(out_channels, out_channels, 3, 1, 1, bias=True),
                                   nn.BatchNorm2d(out_channels),
                                   nn.ReLU(inplace=True)
                                  )
@@ -74,13 +74,4 @@ class UNET(nn.Module):
 
         return self.final_conv(x)
 
-def test():
-    x = torch.randn((16, 3, 400, 400))
-    model = UNET(in_channels=3, out_channels=1)
-    preds = model(x)
-    print(preds.shape)
-    print(x.shape)
-    assert preds.shape[2] == x.shape[2] and preds.shape[3] == x.shape[3]
 
-if __name__ == "__main__":
-    test()
