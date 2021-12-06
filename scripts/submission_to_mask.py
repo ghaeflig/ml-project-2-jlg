@@ -1,7 +1,8 @@
 #!/usr/bin/python
 import os
 import sys
-import Image
+#import Image
+from PIL import Image
 import math
 import matplotlib.image as mpimg
 import numpy as np

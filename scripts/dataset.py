@@ -2,7 +2,7 @@ import os
 import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
-from helpers import value_to_class
+#from helpers import value_to_class
 #from data_augmentation import transform
 
 class ImgDataset(Dataset):

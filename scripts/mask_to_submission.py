@@ -35,12 +35,22 @@ def masks_to_submission(submission_filename, *image_filenames):
         for fn in image_filenames[0:]:
             f.writelines('{}\n'.format(s) for s in mask_to_submission_strings(fn))
 
-
-if __name__ == '__main__':
-    submission_filename = 'dummy_submission.csv'
+def submission(save_path, sub_path, sub_filename = 'submission.csv', test_size=50) :
+    """ """
+    sub_filename = os.path.join(sub_path ,sub_filename)
+    #print(sub_filename)
     image_filenames = []
-    for i in range(1, 51):
-        image_filename = 'training/groundtruth/satImage_' + '%.3d' % i + '.png'
-        print image_filename
+    for i in range(1, test_size+1):
+        image_filename = os.path.join(save_path, "/test_pred_{}.png".format(i))
+        #print(image_filename)
         image_filenames.append(image_filename)
-    masks_to_submission(submission_filename, *image_filenames)
+    masks_to_submission(sub_filename, *image_filenames)
+
+#if __name__ == '__main__':
+#    submission_filename = 'dummy_submission.csv'
+#    image_filenames = []
+#    for i in range(1, 51):
+#        image_filename = 'training/groundtruth/satImage_' + '%.3d' % i + '.png'
+#        print(image_filename)
+#        image_filenames.append(image_filename)
+#    masks_to_submission(submission_filename, *image_filenames)

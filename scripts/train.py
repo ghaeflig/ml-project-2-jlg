@@ -38,20 +38,7 @@ OUTPUT_DIR = '../outputs/output_NE{}_BS{}_LR{}_WD{}'.format(NUM_EPOCHS, BATCH_SI
 # a trouver un bon moyen de nommer nos outputs folders
 
 torch.manual_seed(SEED) # a voir si c'est deja fait a quelque part --> eviter les problème de dépendance
-
-
-def make_img_overlay(img, predicted_img): #superposition a voir si on le rajoute dans train_val ?
-    w = img.shape[0]
-    h = img.shape[1]
-    color_mask = numpy.zeros((w, h, 3), dtype=numpy.uint8)
-    color_mask[:, :, 0] = predicted_img*PIXEL_DEPTH
-
-    img8 = img_float_to_uint8(img)
-    background = Image.fromarray(img8, 'RGB').convert("RGBA")
-    overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
-    new_img = Image.blend(background, overlay, 0.2)
-    return new_img
-
+        
 def check_accuracy(pred, y):
     pred = (pred > 0.5).float()
     num_correct = 0
@@ -64,10 +51,10 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
     model.train()
     train_loss = 0
     accuracies = 0
-    it = 1
+    it = 0
     #batch_x = train images and batch_y = train masks
     for batch_x, batch_y in train_loader:
-        print("it num for train func : {} / {}.".format(it, len(train_loader)))
+        print("it num for train func : {} / {}.".format(it, len(train_loader)-1))
         batch_x = batch_x.permute(0, 3, 2, 1).float()
         batch_x, batch_y = batch_x.to(device), batch_y.to(device)
 
@@ -110,10 +97,10 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
 def train_val(val_loader, model, epoch, writer=None, device = DEVICE) :
     model.eval()
     accuracies = 0
-    it = 1
+    it = 0
     with torch.no_grad() :
         for batch_x, batch_y in val_loader :
-            print("it num for train val func : {} / {}.".format(it, len(val_loader)))
+            print("it num for train val func : {} / {}.".format(it, len(val_loader)-1))
             batch_x = batch_x.permute(0, 3, 2, 1).float()
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
             pred = model(batch_x)
@@ -148,21 +135,22 @@ def training(train_loader, val_loader, print_err=True) :
         print("\nAs you are on a GPU, a scaler is added to the training in order to prevent underflow")
 
     for epoch in range(NUM_EPOCHS):
-        print("\nEpoch : {} / {}".format(epoch+1, NUM_EPOCHS))
+        print("\nEpoch : {} / {}".format(epoch, NUM_EPOCHS-1))
         train_loss, accuracy_train = train_func(train_loader, model, epoch, criterion, optimizer, scaler, writer)
         accuracy = train_val(val_loader, model, epoch, writer)
         scheduler.step(train_loss) # or eval score ?
 
         if (print_err == True) :
-            print("\nEpoch {} | Train loss: {:.5f} and train accuracy: {:.5f}".format(epoch+1, train_loss, accuracy_train))
-            print("Epoch {} | Validation accuracy: {:.5f}".format(epoch+1, accuracy))
+            print("\nEpoch {} | Train loss: {:.5f} and train accuracy: {:.5f}".format(epoch, train_loss, accuracy_train))
+            print("Epoch {} | Validation accuracy: {:.5f}".format(epoch, accuracy))
 
         if accuracy > max_accuracy :
             max_accuracy = accuracy.clone() #à verifier
             max_accuracy_epoch = copy.deepcopy(epoch)
-            torch.save(model.state_dict(),  OUTPUT_DIR + '/parameters.pt') #.pt or .plk
+            save_checkpoint(OUTPUT_DIR, epoch, model, optimizer, scheduler, scaler)
+            #torch.save(model.state_dict(),  OUTPUT_DIR + '/parameters.pt') #.pt or .plk
 
-    print("\nThe maximum accuracy over all epochs is {} at epoch {}.".format(max_accuracy, max_accuracy_epoch+1))
+    print("\nThe maximum accuracy over all epochs is {} at epoch {}.".format(max_accuracy, max_accuracy_epoch))
     print("\nThe best model over all epochs is saved into folder name {} with name parameters.pt".format(OUTPUT_DIR))
 
 

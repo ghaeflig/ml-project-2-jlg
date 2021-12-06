@@ -1,6 +1,8 @@
 import torch
 import torchvision
+import os
 import numpy as np
+from train import DEVICE
 
 
 ############################ PREPROCESSING ###########################################
@@ -63,16 +65,46 @@ def transform(imgs, gt_imgs):
     return img_patches, gt_patches
 
 ############################# CHECKPOINTS ###########################################
-def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
+def save_checkpoint(save_path, epoch, model, optimizer, scheduler, scaler) :
     print("=> Saving checkpoint")
-    torch.save(state, filename)
-
-def load_checkpoint(checkpoint, model):
-    print("=> Loading checkpoint")
-    model.load_state_dict(checkpoint["state_dict"])
-
+    saved_scheduler = None
+    saved_scaler = None
+    if scheduler is not None:
+        saved_scheduler = scheduler.state_dict()
+    if scaler is not None :
+        saved_scaler = scaler.sate_dict()
+    checkpoint = {'epoch': epoch, 'model': model.state_dict(), 'optimizer': optimizer.state_dict(), 'scheduler': saved_scheduler, 'scaler': saved_scaler}
+    torch.save(checkpoint, save_path + '/parameters.pt')
+    
+    
+def load_checkpoint(checkpoint_path, model, optimizer = None, scheduler = None, scaler = None):
+    if not os.path.exists(checkpoint_path):
+        print("The requested file ({}) does not exist ; the checkpoint can not be loaded".format(checkpoint_path))
+    else :
+        checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
+        epoch = checkpoint['epoch']
+        print("=> Loading checkpoint from a trained model at epoch {}".format(epoch))
+        model.load_state_dict(checkpoint['model']) 
+        if optimizer is not None :
+            optimizer.load_state_dict(checkpoint['optimizer'])
+        if scheduler is not None :
+            scheduler.load_state_dict(checkpoint['scheduler'])
+        if scaler is not None :
+            scaler.load_state_dict(checkpoint['scaler'])
 
 
 ############################ MODEL PERFORMANCE EVALUATION ###################################
 def save_predictions_as_imgs(s):
     s=3
+
+def make_img_overlay(img, predicted_img): 
+    w = img.shape[0]
+    h = img.shape[1]
+    color_mask = numpy.zeros((w, h, 3), dtype=numpy.uint8)
+    color_mask[:, :, 0] = predicted_img*PIXEL_DEPTH
+
+    img8 = img_float_to_uint8(img)
+    background = Image.fromarray(img8, 'RGB').convert("RGBA")
+    overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
+    new_img = Image.blend(background, overlay, 0.2)
+    return new_img
