@@ -41,8 +41,8 @@ def submission(save_path, sub_path, sub_filename = 'submission.csv', test_size=5
     #print(sub_filename)
     image_filenames = []
     for i in range(1, test_size+1):
-        image_filename = os.path.join(save_path, "/test_pred_{}.png".format(i))
-        #print(image_filename)
+        image_filename = save_path + "/test_pred_{}.png".format(i)
+        print(image_filename)
         image_filenames.append(image_filename)
     masks_to_submission(sub_filename, *image_filenames)
 
