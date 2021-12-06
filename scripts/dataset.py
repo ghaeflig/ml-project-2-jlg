@@ -41,8 +41,8 @@ class ImgDataset(Dataset):
         image = np.array(Image.open(image_path).convert("RGB"))
         gt = np.array(Image.open(gt_path).convert("L"), dtype=np.float32)
         #gt = np.expand_dims(gt, 0)
-        gt[gt>0.25] = 1
-        gt[gt<=0.25] = 0
+        gt[gt>0.5] = 1
+        gt[gt<=0.5] = 0
         #if transform is not None:
             #image, gt = transform(image, gt) # returns a vector of values is ok? need to change self.images?
             # Preprocessing: data augmentation, balancing, cut in patches = transform ?

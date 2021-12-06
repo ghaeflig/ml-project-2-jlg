@@ -44,6 +44,7 @@ def submission(save_path, sub_path, sub_filename = 'submission.csv', test_size=5
         image_filename = save_path + "/test_pred_{}.png".format(i)
         print(image_filename)
         image_filenames.append(image_filename)
+    print(image_filenames)
     masks_to_submission(sub_filename, *image_filenames)
 
 #if __name__ == '__main__':

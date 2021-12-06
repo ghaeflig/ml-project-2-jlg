@@ -83,7 +83,7 @@ def load_checkpoint(checkpoint_path, model, optimizer = None, scheduler = None, 
     else :
         checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
         epoch = checkpoint['epoch']
-        print("=> Loading checkpoint from a trained model at epoch {}".format(epoch))
+        print("=> Loading checkpoint from a trained model at the best epoch {}".format(epoch))
         model.load_state_dict(checkpoint['model']) 
         if optimizer is not None :
             optimizer.load_state_dict(checkpoint['optimizer'])
