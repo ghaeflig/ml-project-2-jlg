@@ -16,7 +16,6 @@ class ImgDataset(Dataset):
 
         #ids = [os.path.splitext(file)[0] for file in os.listdir(image_dir)]
         ids = [int(file[9:12]) for file in os.listdir(image_dir)]
-        ids.sort() #shuffle , is in loader???
         n = len(ids)
         if self.mode == "train" :
             self.ids = ids[0:int(n * split_ratio)]
@@ -25,7 +24,7 @@ class ImgDataset(Dataset):
             self.ids = ids[int(n * split_ratio):n]
             #print(f'ids: {self.ids}')
             #print(f'TEST index 0 val: {self.ids[0]-1}')
-
+        self.ids.sort()
         self.images = os.listdir(image_dir) #list all files in that folder
         self.gt = os.listdir(gt_dir)
         print(f'Creating {mode} dataset with {len(self.ids)} samples')
@@ -61,6 +60,6 @@ class TestDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, index):
-        image_path = os.path.join(self.dir, self.ids[index])
+        image_path = os.path.join(self.dir + 'test_' + str(index+1) + '/test_' + str(index+1) + '.png')
         image = np.array(Image.open(image_path).convert("RGB"))
         return image
