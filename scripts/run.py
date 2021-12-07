@@ -29,9 +29,9 @@ def img_float_to_uint8(img) : #a mettre dans helper
 
 print('\nStart running...')
 if not torch.cuda.is_available() :
-        print("\nThings will go much quicker if you enable a GPU in Colab under 'Runtime / Change Runtime Type'")
-    else :
-        print("\nYou are running the prediction of the test data on a GPU")
+	print("\nThings will go much quicker if you enable a GPU in Colab under 'Runtime / Change Runtime Type'")
+else :
+	print("\nYou are running the prediction of the test data on a GPU")
 
 # Load the test set 
 print('\nTest data loading...')
@@ -41,9 +41,10 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=BATCH_SIZE, shuff
 
 
 # Load checkpoint
-root_dir = "../outputs/"  
-output_dir =  "output_NE25_BS8_LR1e-05_WD1e-08" #OUTPUT_DIR
-checkpoint_path = os.path.join(root_dir, output_dir + '/parameters.pt')
+root_dir = "../outputs"  
+#output_dir =  "" #"output_NE25_BS8_LR1e-05_WD1e-08" name of the folder 
+checkpoint_path = os.path.join(root_dir, 'parameters.pt')
+print('checkpoint path {}'.format(checkpoint_path))
 model = UNET().to(DEVICE)
 load_checkpoint(checkpoint_path, model)
 
@@ -51,17 +52,24 @@ load_checkpoint(checkpoint_path, model)
 model.eval() 
 
 # Make and save test binary prediction images
-save_path = os.path.join(root_dir, output_dir + '/binary_masks')
+save_path = os.path.join(root_dir, 'binary_masks')
+print('save path {}'.format(save_path))
 os.mkdir(save_path)
 it = 1
 for batch_x in test_loader :
 	batch_x = batch_x.permute(0, 3, 2, 1).float()
 	batch_x = batch_x.to(DEVICE)
-	pred = get_prediction(batch_x, model)
+	pred = model(batch_x)
+	pred = pred.squeeze(1)
+	pred = torch.sigmoid(pred)
 	for i in range(BATCH_SIZE) : 
 		mask = pred[i].cpu().detach().numpy() #we can not convert cuda tensor into numpy
-		mask = img_float_to_uint8(mask)
-		mask_path = save_path + "/test_pred_{}.png".format(it)
+		#print(mask.type())
+		mask[mask>0.5] = 1
+		mask[mask<=0.5] = 0
+		#mask = img_float_to_uint8(mask)
+		mask_path = os.path.join(save_path, '%.3d' % it + '.png')
+		print(mask_path)
 		io.imsave(mask_path, mask) 
 		print('Prediction binary mask for test image {} is saved'.format(it))
 		it = it + 1
@@ -69,9 +77,8 @@ print('\nYou can find all the test binary masks by following the path : {}'.form
 
 # Make a submission csv file
 print('\nTransformation of the binary masks into a submission csv file...')
-sub_path = os.path.join(root_dir, output_dir)
-submission(save_path, sub_path)
-print('\nYou can find the submission.csv file by following the path : {}'.format(sub_path))
+submission(save_path, root_dir)
+print('\nYou can find the submission.csv file by following the path : {}'.format(root_dir))
 
 #if IMG_PLOTS :
 

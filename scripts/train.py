@@ -31,11 +31,12 @@ SEED = 66478
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 NUM_EPOCHS = 25 #100
 BATCH_SIZE = 2 #64
-LEARNING_RATE = 1e-5
-WEIGHT_DECAY = 1e-8
+LEARNING_RATE = 1e-4
+WEIGHT_DECAY = 1e-6
 RESTORE_MODEL = False  # If True, restore existing model instead of training a new one
-OUTPUT_DIR = '../outputs/output_NE{}_BS{}_LR{}_WD{}'.format(NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE, WEIGHT_DECAY) # change in function of the paramters that are used to run the training
+#OUTPUT_DIR = '../outputs/output_NE{}_BS{}_LR{}_WD{}'.format(NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE, WEIGHT_DECAY) # change in function of the paramters that are used to run the training
 # a trouver un bon moyen de nommer nos outputs folders
+OUTPUT_DIR = '../outputs'
 
 torch.manual_seed(SEED) # a voir si c'est deja fait a quelque part --> eviter les problème de dépendance
         
