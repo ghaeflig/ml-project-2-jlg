@@ -8,8 +8,7 @@ from dataset import TestDataset
 from helpers import *
 from model import UNET
 from torch.utils.tensorboard import SummaryWriter
-
-import skimage.io as io
+from sklearn.metrics import f1_score, accuracy_score
 
 
 
@@ -31,38 +30,47 @@ PIN_MEMORY = True
 
 SEED = 66478
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-NUM_EPOCHS = 25 #100
+NUM_EPOCHS = 75 #100
 BATCH_SIZE = 2 #64
 LEARNING_RATE = 1e-4
-WEIGHT_DECAY = 1e-6
-RESTORE_MODEL = True  # If True, restore existing model instead of training a new one
+WEIGHT_DECAY = 0
+#RESTORE_MODEL = False  # If True, restore existing model instead of training a new one
 #OUTPUT_DIR = '../outputs/output_NE{}_BS{}_LR{}_WD{}'.format(NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE, WEIGHT_DECAY) # change in function of the paramters that are used to run the training
 # a trouver un bon moyen de nommer nos outputs folders
 OUTPUT_DIR = '../outputs'
 
 torch.manual_seed(SEED) # a voir si c'est deja fait a quelque part --> eviter les problème de dépendance
-
-def check_accuracy(pred, y):
+        
+"""def check_accuracy(pred, y):
     pred = (pred > 0.5).float()
     num_correct = 0
     num_pixels = 0
     num_correct += (pred == y).sum()
     num_pixels += torch.numel(pred)
-    return num_correct/num_pixels
+    return num_correct/num_pixels"""
+
+def check_accuracy(pred, y, batch_size=BATCH_SIZE):
+    pred = (pred > 0.5).float()
+    patch_pred = [img_crop(pred[i].cpu().detach().numpy(), 16, 16) for i in range(batch_size)]
+    patch_y = [img_crop(y[i].cpu().detach().numpy(), 16, 16) for i in range(batch_size)]
+    return accuracy_score(np.array(patch_y).ravel(), np.array(patch_pred).ravel())
+
+
+
+def check_f1(pred, y, batch_size=BATCH_SIZE):
+    pred = (pred > 0.5).float()
+    patch_pred = [img_crop(pred[i].cpu().detach().numpy(), 16, 16) for i in range(batch_size)]
+    patch_y = [img_crop(y[i].cpu().detach().numpy(), 16, 16) for i in range(batch_size)]
+    return f1_score(np.array(patch_y).ravel(), np.array(patch_pred).ravel())
+
+
 
 def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, writer=None, device=DEVICE) :
     model.train()
     train_loss = 0
     accuracies = 0
+    f1_sum = 0
     it = 0
-
-    # Make and save test binary prediction images
-    if(epoch==18):
-        save_path = os.path.join(OUTPUT_DIR, 'binary_masks_train')
-        print('save path {}'.format(save_path))
-        os.mkdir(save_path)
-
-
     #batch_x = train images and batch_y = train masks
     for batch_x, batch_y in train_loader:
         print("it num for train func : {} / {}.".format(it, len(train_loader)-1))
@@ -72,7 +80,6 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
         # Evaluate the network (forward pass)
         pred = model(batch_x)
         pred = pred.squeeze(1) #[8,1,400,400] to [8,400,400] to have the same size as batch_y
-        #pred = torch.sigmoid(pred)
 
         if (epoch==18):
             mask = pred[0].cpu().detach().numpy() #we can not convert cuda tensor into numpy
@@ -85,12 +92,13 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
             io.imsave(mask_path, mask)
             print('Prediction binary mask for test image {} is saved'.format(it))
 
-        # Compute the loss and the gradient
-        loss = criterion(pred, batch_y)
-        #print(loss)
+         # Compute the loss and the gradient
+        loss = criterion(pred, batch_y) #pas sigmoid dans la binary cross entropy donc sigmoid apres
         train_loss += float(loss.item())
-        acc = check_accuracy(torch.sigmoid(pred), batch_y)
-        accuracies += acc   #jsp s'il faut sigmoid ici ??
+        pred = torch.sigmoid(pred)
+        accuracies += check_accuracy(pred, batch_y)
+        f1_sum += check_f1(pred, batch_y)
+
         optimizer.zero_grad()
         loss.backward()
 
@@ -108,20 +116,22 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
         it = it + 1
 
     train_loss = train_loss / len(train_loader)
-    accuracy = accuracies/len(train_loader)
-    if writer is not None :
-        writer.add_scalar('Train loss / epoch', train_loss, epoch)
-        writer.add_scalar('Train accuracy / epoch', accuracy, epoch)
+    accuracy_mean = accuracies / len(train_loader)
+    f1_mean = f1_sum / len(train_loader)
+    #if writer is not None :
+    #    writer.add_scalar('Train loss / epoch', train_loss, epoch)
+    #    writer.add_scalar('Train accuracy / epoch', accuracy_mean, epoch)
 
-    return train_loss, accuracy
+    return train_loss, accuracy_mean, f1_mean
 
 
 def train_val(val_loader, model, epoch, writer=None, device = DEVICE) :
     model.eval()
     accuracies = 0
+    f1_sum = 0
     it = 0
-    with torch.no_grad():
-        for batch_x, batch_y in val_loader:
+    with torch.no_grad() :
+        for batch_x, batch_y in val_loader :
             print("it num for train val func : {} / {}.".format(it, len(val_loader)-1))
             batch_x = batch_x.permute(0, 3, 2, 1).float()
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
@@ -129,12 +139,14 @@ def train_val(val_loader, model, epoch, writer=None, device = DEVICE) :
             pred = pred.squeeze(1)
             pred = torch.sigmoid(pred)
             accuracies += check_accuracy(pred, batch_y)
+            f1_sum += check_f1(pred, batch_y)
             it = it + 1
 
-    accuracy_avg = accuracies/len(val_loader)
-    if writer is not None :
-        writer.add_scalar("Validation accuracy / epoch", accuracy_avg, epoch)
-    return accuracy_avg
+    accuracy_mean = accuracies/len(val_loader)
+    f1_mean = f1_sum / len(val_loader)
+    #if writer is not None :
+    #    writer.add_scalar("Validation accuracy / epoch", accuracy_avg, epoch)
+    return accuracy_mean, f1_mean
 
 
 def training(train_loader, val_loader, print_err=True) :
@@ -144,35 +156,35 @@ def training(train_loader, val_loader, print_err=True) :
     else :
         print("\nYou are running the training of the data on a GPU")
 
-    max_accuracy = 0
+    max_f1 = 0
     model = UNET().to(DEVICE) # peut etre a mettre model en parametres de la fonction
     criterion = torch.nn.BCEWithLogitsLoss().to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     # scheduler reduces learning rate when a metric has stopped improving
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=7, verbose=True) #rajouter variable globale factor ect..
-    writer = SummaryWriter() # folder location: runs/May04_22-14-54_s-MacBook-Pro.comment/ comment=''
+    writer = None #SummaryWriter() # folder location: runs/May04_22-14-54_s-MacBook-Pro.comment/ comment=''
     scaler = None
-    if torch.cuda.is_available():
-        scaler_ = torch.cuda.amp.GradScaler()
-        print("\nAs you are on a GPU, a scaler is added to the training in order to prevent underflow")
+    #if torch.cuda.is_available():
+    #    scaler_ = torch.cuda.amp.GradScaler()
+    #    print("\nAs you are on a GPU, a scaler is added to the training in order to prevent underflow")
 
     for epoch in range(NUM_EPOCHS):
         print("\nEpoch : {} / {}".format(epoch, NUM_EPOCHS-1))
-        train_loss, accuracy_train = train_func(train_loader, model, epoch, criterion, optimizer, scaler, writer)
-        accuracy = train_val(val_loader, model, epoch, writer)
+        train_loss, accuracy_train, f1_train = train_func(train_loader, model, epoch, criterion, optimizer, scaler, writer)
+        accuracy_val, f1_val = train_val(val_loader, model, epoch, writer)
         scheduler.step(train_loss) # or eval score ?
 
         if (print_err == True) :
-            print("\nEpoch {} | Train loss: {:.5f} and train accuracy: {:.5f}".format(epoch, train_loss, accuracy_train))
-            print("Epoch {} | Validation accuracy: {:.5f}".format(epoch, accuracy))
+            print("\nEpoch {} | Train loss: {:.5f} train f1 score: {:.5f} and train accuracy: {:.5f}".format(epoch, train_loss, f1_train, accuracy_train))
+            print("Epoch {} | Validation f1 score : {:.5f} and validation accuracy: {:.5f}".format(epoch, f1_val, accuracy_val))
 
-        if accuracy > max_accuracy :
-            max_accuracy = accuracy.clone() #à verifier
-            max_accuracy_epoch = copy.deepcopy(epoch)
+        if f1_val > max_f1 :
+            max_f1 = copy.deepcopy(f1_val) #à verifier
+            max_f1_epoch = copy.deepcopy(epoch)
             save_checkpoint(OUTPUT_DIR, epoch, model, optimizer, scheduler, scaler)
             #torch.save(model.state_dict(),  OUTPUT_DIR + '/parameters.pt') #.pt or .plk
 
-    print("\nThe maximum accuracy over all epochs is {} at epoch {}.".format(max_accuracy, max_accuracy_epoch))
+    print("\nThe maximum f1 score over all epochs is {} at epoch {}.".format(max_f1, max_f1_epoch))
     print("\nThe best model over all epochs is saved into folder name {} with name parameters.pt".format(OUTPUT_DIR))
 
 
@@ -203,7 +215,7 @@ def main() :
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
 
-    if (trained_model() and not(RESTORE_MODEL)) :
+    """if (trained_model() and not(RESTORE_MODEL)) :
         print("\nThis model has already been trained and the parameters can be loaded from the corresponding output folder : {}".format(OUTPUT_DIR))
         #model.load_state_dict(torch.load(OUTPUT_DIR + 'parameters.pt'))
     else :
@@ -214,7 +226,9 @@ def main() :
         if (not(RESTORE_MODEL)) :
               os.mkdir(OUTPUT_DIR)
               print("\n Creating the output directory : {} in which you will find the parameters of the trained model (parameters.pt)".format(OUTPUT_DIR))
-        training(train_loader, val_loader)
+        training(train_loader, val_loader)"""
+
+    training(train_loader, val_loader)
 
 
 
