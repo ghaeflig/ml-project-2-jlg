@@ -1,7 +1,11 @@
+import matplotlib.image as mpimg
 import numpy as np
+import matplotlib.pyplot as plt
 import os, sys
 import torch.optim as optim
 import copy
+import torch.nn as nn 
+import torch.nn.functional as F
 from torch.utils import data
 from dataset import ImgDataset
 from dataset import TestDataset
@@ -40,7 +44,31 @@ WEIGHT_DECAY = 0
 OUTPUT_DIR = '../outputs'
 
 torch.manual_seed(SEED) # a voir si c'est deja fait a quelque part --> eviter les problème de dépendance
+
+#PyTorch
+class IoULoss(nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(IoULoss, self).__init__()
+
+    def forward(self, inputs, targets, smooth=1):
         
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        inputs = torch.sigmoid(inputs)       
+        
+        #flatten label and prediction tensors
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        
+        #intersection is equivalent to True Positive count
+        #union is the mutually inclusive area of all labels & predictions 
+        intersection = (inputs * targets).sum()
+        total = (inputs + targets).sum()
+        union = total - intersection 
+        
+        IoU = (intersection + smooth)/(union + smooth)
+                
+        return 1 - IoU
+
 """def check_accuracy(pred, y):
     pred = (pred > 0.5).float()
     num_correct = 0
@@ -74,7 +102,7 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
     #batch_x = train images and batch_y = train masks
     for batch_x, batch_y in train_loader:
         print("it num for train func : {} / {}.".format(it, len(train_loader)-1))
-        batch_x = batch_x.permute(0, 3, 2, 1).float()
+        batch_x = batch_x.permute(0, 3, 1, 2).float()
         batch_x, batch_y = batch_x.to(device), batch_y.to(device)
 
         # Evaluate the network (forward pass)
@@ -124,7 +152,7 @@ def train_val(val_loader, model, epoch, writer=None, device = DEVICE) :
     with torch.no_grad() :
         for batch_x, batch_y in val_loader :
             print("it num for train val func : {} / {}.".format(it, len(val_loader)-1))
-            batch_x = batch_x.permute(0, 3, 2, 1).float()
+            batch_x = batch_x.permute(0, 3, 1, 2).float()
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
             pred = model(batch_x)
             pred = pred.squeeze(1)
