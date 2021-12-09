@@ -32,7 +32,7 @@ PIN_MEMORY = True
 
 SEED = 66478
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-NUM_EPOCHS = 75 #100
+NUM_EPOCHS = 75 #100 #75
 BATCH_SIZE = 2 #64
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 0
@@ -68,11 +68,13 @@ def concatenate_images(img, gt_img):
         #gt_img_3c = np.zeros((w, h, 3), dtype=np.uint8)
         gt_img_3c = np.zeros((w, h, 3))
         #gt_img8 = img_float_to_uint8(gt_img)
-        gt_img_3c[:,:,0] = gt_img.detach().numpy()
-        gt_img_3c[:,:,1] = gt_img.detach().numpy()
-        gt_img_3c[:,:,2] = gt_img.detach().numpy()
+        gt_img_3c[:,:,0] = gt_img.detach().cpu().numpy() #PETITE CORRECTION .cpu()
+        gt_img_3c[:,:,1] = gt_img.detach().cpu().numpy()
+        gt_img_3c[:,:,2] = gt_img.detach().cpu().numpy()
         #img8 = img_float_to_uint8(img)
-        cimg = np.concatenate((img, gt_img_3c), axis=1)
+        #print(type(img))
+        #print(type(gt_img_3c))
+        cimg = np.concatenate((img.cpu(), gt_img_3c), axis=1)
     return cimg
 
 
@@ -125,9 +127,12 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
          # Compute the loss and the gradient
         loss = criterion(pred, batch_y) #pas sigmoid dans la binary cross entropy donc sigmoid apres
         train_loss += float(loss.item())
-        pred = torch.sigmoid(pred)
+        #pred = torch.sigmoid(pred)
+        #print("pred after sigmoid :", pred)
         accuracies += check_accuracy(pred, batch_y)
+        #print("f1_sum before check_f1 :", f1_sum)
         f1_sum += check_f1(pred, batch_y)
+        #print("f1_sum after check_f1 :", f1_sum)
 
         # print to check results
         cimg = concatenate_images(batch_x[0], pred[0])
@@ -150,9 +155,10 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
             #writer.add_scalar("Train loss / batch for epoch {}".format(epoch), loss.item(), it)
         it = it + 1
 
+    #print("f1_sum after running on batch :", f1_sum)
     train_loss = train_loss / len(train_loader)
     accuracy_mean = accuracies / len(train_loader)
-    f1_mean = f1_sum / len(train_loader)
+    f1_mean = f1_sum / len(train_loader) #len = 40
     #if writer is not None :
     #    writer.add_scalar('Train loss / epoch', train_loss, epoch)
     #    writer.add_scalar('Train accuracy / epoch', accuracy_mean, epoch)
