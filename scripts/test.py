@@ -1,4 +1,6 @@
+import matplotlib.image as mpimg
 import numpy as np
+import matplotlib.pyplot as plt
 import os, sys
 import torch.optim as optim
 import copy
@@ -40,7 +42,7 @@ WEIGHT_DECAY = 0
 OUTPUT_DIR = '../outputs'
 
 torch.manual_seed(SEED) # a voir si c'est deja fait a quelque part --> eviter les problème de dépendance
-        
+
 """def check_accuracy(pred, y):
     pred = (pred > 0.5).float()
     num_correct = 0
@@ -48,6 +50,34 @@ torch.manual_seed(SEED) # a voir si c'est deja fait a quelque part --> eviter le
     num_correct += (pred == y).sum()
     num_pixels += torch.numel(pred)
     return num_correct/num_pixels"""
+
+def img_float_to_uint8(img):
+    rimg = img - np.min(img)
+    rimg = (rimg / np.max(rimg) * 255).round().astype(np.uint8)
+    return rimg
+
+
+def concatenate_images(img, gt_img):
+    nChannels = len(gt_img.shape)
+    img = img.permute(2, 1, 0).float()
+    w = gt_img.shape[0]
+    h = gt_img.shape[1]
+    if nChannels == 3:
+        cimg = np.concatenate((img, gt_img), axis=1)
+    else:
+        #gt_img_3c = np.zeros((w, h, 3), dtype=np.uint8)
+        gt_img_3c = np.zeros((w, h, 3))
+        #gt_img8 = img_float_to_uint8(gt_img)
+        gt_img_3c[:,:,0] = gt_img.detach().numpy()
+        gt_img_3c[:,:,1] = gt_img.detach().numpy()
+        gt_img_3c[:,:,2] = gt_img.detach().numpy()
+        #img8 = img_float_to_uint8(img)
+        cimg = np.concatenate((img, gt_img_3c), axis=1)
+    return cimg
+
+
+
+
 
 def check_accuracy(pred, y, batch_size=BATCH_SIZE):
     pred = (pred > 0.5).float()
@@ -98,6 +128,11 @@ def train_func(train_loader, model, epoch, criterion, optimizer, scaler=None, wr
         pred = torch.sigmoid(pred)
         accuracies += check_accuracy(pred, batch_y)
         f1_sum += check_f1(pred, batch_y)
+
+        # print to check results
+        cimg = concatenate_images(batch_x[0], pred[0])
+        fig1 = plt.figure(figsize=(10, 10))
+        plt.imshow(cimg, cmap='Greys_r')
 
         optimizer.zero_grad()
         loss.backward()
