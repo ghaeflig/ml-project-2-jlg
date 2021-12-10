@@ -7,8 +7,8 @@ import re
 
 foreground_threshold = 0.25 # percentage of pixels > 1 required to assign a foreground label to a patch
 
-# assign a label to a patch
 def patch_to_label(patch):
+    """Assign a label to a patch"""
     df = np.mean(patch)
     if df > foreground_threshold:
         return 1
@@ -25,38 +25,24 @@ def mask_to_submission_strings(image_filename):
         for i in range(0, im.shape[0], patch_size):
             patch = im[i:i + patch_size, j:j + patch_size]
             label = patch_to_label(patch)
-            #print('img nb : {}'.format(img_number))
-            #print('i {}, j {}'.format(i,j))
-            #print('label {}'.format(label))
             yield("{:03d}_{}_{},{}".format(img_number, j, i, label))
 
 
 def masks_to_submission(submission_filename, *image_filenames):
     """Converts images into a submission file"""
     with open(submission_filename, 'w') as f:
-        #print('open submission filename')
         f.write('id,prediction\n')
         for fn in image_filenames[0:]:
             print('file name for write {}'.format(fn))
             f.writelines('{}\n'.format(s) for s in mask_to_submission_strings(fn))
 
+
 def submission(save_path, sub_path, sub_filename = 'submission.csv', test_size=50) :
-    """ """
+    """ Make a submission file from the predicted binary masks"""
     sub_filename = os.path.join(sub_path ,sub_filename)
-    print(sub_filename)
     image_filenames = []
     for i in range(1, test_size+1):
         image_filename = os.path.join(save_path, '%.3d' % i + '.png')
-        #print(image_filename)
         image_filenames.append(image_filename)
-    #print(image_filenames)
     masks_to_submission(sub_filename, *image_filenames)
 
-#if __name__ == '__main__':
-#    submission_filename = 'dummy_submission.csv'
-#    image_filenames = []
-#    for i in range(1, 51):
-#        image_filename = 'training/groundtruth/satImage_' + '%.3d' % i + '.png'
-#        print(image_filename)
-#        image_filenames.append(image_filename)
-#    masks_to_submission(submission_filename, *image_filenames)

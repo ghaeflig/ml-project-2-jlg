@@ -1,6 +1,9 @@
+# Unet based on https://github.com/aladdinpersson/Machine-Learning-Collection/tree/master/ML/Pytorch/image_segmentation/semantic_segmentation_unet
+
 import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
+
 
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
