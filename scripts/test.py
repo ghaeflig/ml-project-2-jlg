@@ -3,20 +3,20 @@ import os, sys
 import torch
 import skimage.io as io
 from dataset import TestDataset
-from helpers import load_checkpoint
+from helpers import load_checkpoint, make_img_overlay, concatenate_images
 from model import UNET
 from mask_to_submission import *
 from train import DEVICE, BATCH_SIZE, OUTPUT_DIR
 #from submission_to_mask import *
 
-IMG_PLOTS = False #save one test image with overlay and genrated mask
-IMG = 6 #index of the image saved, can be between 1 and 50
+IMG_PLOTS = True #save one test image with overlay and genrated mask
+IMG = 1 #index of the image saved, can be between 1 and 50
 
 print('\nStart running...')
 if not torch.cuda.is_available() :
-	print("\nThings will go much quicker if you enable a GPU in Colab under 'Runtime / Change Runtime Type'")
+    print("\nThings will go much quicker if you enable a GPU in Colab under 'Runtime / Change Runtime Type'")
 else :
-	print("\nYou are running the prediction of the test data on a GPU")
+    print("\nYou are running the prediction of the test data on a GPU")
 
 # Load the test set
 print('\nTest data loading...')
@@ -37,32 +37,32 @@ model.eval()
 # Make and save test binary prediction images
 save_path = os.path.join(root_dir, 'binary_masks')
 if not os.path.isdir(save_path) :
-	os.mkdir(save_path)
+    os.mkdir(save_path)
 it = 1
 print('\nDo not care about the warnings...')
 for batch_x in test_loader :
-	batch_x = batch_x.permute(0, 3, 1, 2).float()
-	batch_x = batch_x.to(DEVICE)
-	pred = model(batch_x)
-	pred = pred.squeeze(1)
-	pred = torch.sigmoid(pred)
-	for i in range(BATCH_SIZE) :
-		mask = pred[i].cpu().detach().numpy() #we can not convert cuda tensor into numpy
-		mask[mask>0.5] = 1
-		mask[mask<=0.5] = 0
-		mask_path = os.path.join(save_path, '%.3d' % it + '.png')
-		io.imsave(mask_path, mask, check_contrast=False)
-		print('Prediction binary mask for test image {} is saved'.format(it))
+    batch_x = batch_x.permute(0, 3, 1, 2).float()
+    batch_x = batch_x.to(DEVICE)
+    pred = model(batch_x)
+    pred = pred.squeeze(1)
+    pred = torch.sigmoid(pred)
+    for i in range(BATCH_SIZE) :
+        mask = pred[i].cpu().detach().numpy() #we can not convert cuda tensor into numpy
+        mask[mask>0.5] = 1
+        mask[mask<=0.5] = 0
+        mask_path = os.path.join(save_path, '%.3d' % it + '.png')
+        io.imsave(mask_path, mask, check_contrast=False)
+        print('Prediction binary mask for test image {} is saved'.format(it))
         # Make some plot if IMG_PLOTS = true
         if (IMG_PLOTS and it==IMG):
-            mask_path = os.path.join(root_dir, 'result_ex%.3d' % IMG + '.png')
-            img_overlay =  make_img_overlay(batch_x[i], pred)
-            io.imsave(mask_path, img_overlay)
-            cimg = concatenate_images(img_overlay, pred)
-            fig1 = plt.figure(figsize=(10, 10))
-            plt.imshow(cimg, cmap='Greys_r')
-            print('Concatenated image with overlay and mask saved in {}'.format(mask_path))
-		it = it + 1
+            cimg_path = os.path.join(root_dir, 'result_ex%.3d' % IMG + '.png')
+            img_overlay =  make_img_overlay(batch_x[i], mask)
+            cimg = concatenate_images(img_overlay, mask)
+            io.imsave(cimg_path, cimg, check_contrast=False)
+            #fig1 = plt.figure(figsize=(10, 10))
+            #plt.imshow(cimg, cmap='Greys_r')
+            print('Concatenated image with overlay and mask saved in {}\n'.format(cimg_path))
+        it = it + 1
 
 
 print('\nYou can find all the test binary masks by following the path : {}'.format(save_path))
