@@ -9,17 +9,17 @@ class ImgDataset(Dataset):
     """ Dataset loader
     train or validation mode
     """
-    def __init__(self, image_dir, gt_dir, mode="train", split_ratio=0.8, transform=None):
+    def __init__(self, image_dir, gt_dir, mode="train", split_ratio=0.8):
         self.mode = mode
         self.image_dir = image_dir
         self.gt_dir = gt_dir
+        self.transform = transform
 
         #ids = [os.path.splitext(file)[0] for file in os.listdir(image_dir)]
         ids = [int(file[9:12]) for file in os.listdir(image_dir)]
         n = len(ids)
         if self.mode == "train" :
             self.ids = ids[0:int(n * split_ratio)]
-            #print(f'ids: {self.ids}')
         if self.mode == "val":
             self.ids = ids[int(n * split_ratio):n]
             #print(f'ids: {self.ids}')
@@ -43,9 +43,6 @@ class ImgDataset(Dataset):
         #gt = np.expand_dims(gt, 0)
         gt[gt>0.5] = 1
         gt[gt<=0.5] = 0
-        #if transform is not None:
-            #image, gt = transform(image, gt) # returns a vector of values is ok? need to change self.images?
-            # Preprocessing: data augmentation, balancing, cut in patches = transform ?
         return image, gt
 
 class TestDataset(Dataset):
