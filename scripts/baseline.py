@@ -69,7 +69,6 @@ def main() :
     N = len(labels)
     idx = np.floor(n*N).astype('int32') # index to stop training set
     X_train = np.asarray([extract_features_2d(img_patches[i]) for i in np.arange(idx)])
-    print(X_train.shape)
     Y_train = np.asarray([labels[i] for i in np.arange(idx)])
 
     X_val = np.asarray([extract_features_2d(img_patches[i]) for i in np.arange(idx+1, N)])
@@ -114,17 +113,13 @@ def main() :
 
     # Testing the model with a validation set
     Y_pred = clf.predict(X_val)
-    #Y_pred[Y_pred>0.5] = 1
-    #Y_pred[Y_pred<=0.5]= 0
     #print('Y val: {} and Y_pred: {}'.format(Y_val, Y_pred))
-    c0 = 0
-    c1 = 0
 
     acc0 = accuracy_score(Y_val[:,0], Y_pred[:,0])
     acc1 = accuracy_score(Y_val[:,1], Y_pred[:,1])
     f1 = f1_score(Y_val, Y_pred, average = 'micro')
 
-    print('F1 score {} and accuracy 0 {} and acuracy 1 {}'.format(f1, acc0, acc1))
+    print('F1 score: {}\t accuracy 0: {}\t acuracy 1: {}'.format(f1, acc0, acc1))
 
 
 
