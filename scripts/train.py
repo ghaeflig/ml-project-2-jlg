@@ -102,7 +102,7 @@ def training(train_loader, val_loader, print_err=True) :
     criterion = IoULoss().to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     #scheduler = None
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.4, patience=5, verbose=True) # scheduler reduces learning rate when a metric has stopped improving
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.4, patience=8, verbose=True) # scheduler reduces learning rate when a metric has stopped improving
     #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.4, patience=5, verbose=True)
     writer = SummaryWriter() # folder location: runs/May04_22-14-54_s-MacBook-Pro.comment/ comment=''
 
