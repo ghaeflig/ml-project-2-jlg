@@ -10,9 +10,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 SEED = 66478
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-NUM_EPOCHS = 10 
+NUM_EPOCHS = 100 
 BATCH_SIZE = 2 
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 5.5*1e-4
 WEIGHT_DECAY = 0
 OUTPUT_DIR = '../outputs'
 
@@ -101,10 +101,9 @@ def training(train_loader, val_loader, print_err=True) :
     model = UNET().to(DEVICE) 
     criterion = IoULoss().to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-    scheduler = None
-    # ATTENTION AUSSI DECOMMENTER LE SCHEDULER.STEP LIGNE 120 !!!!
-    #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=7, verbose=True) # scheduler reduces learning rate when a metric has stopped improving
-
+    #scheduler = None
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.4, patience=5, verbose=True) # scheduler reduces learning rate when a metric has stopped improving
+    #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.4, patience=5, verbose=True)
     writer = SummaryWriter() # folder location: runs/May04_22-14-54_s-MacBook-Pro.comment/ comment=''
 
     for epoch in range(NUM_EPOCHS):
@@ -117,7 +116,8 @@ def training(train_loader, val_loader, print_err=True) :
         accuracy_val, f1_val = train_val(val_loader, model, epoch)
 
         # Updating the scheduler
-        #scheduler.step(train_loss) 
+        scheduler.step(f1_val) 
+        #scheduler.step(train_loss)
 
         # Printing the training and validation errors
         if (print_err == True) :
