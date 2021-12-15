@@ -1,15 +1,12 @@
+import os, sys
 import numpy as np
-import scipy
-import scipy.io
-import scipy.sparse as sp
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.neural_network import MLPClassifier
-
-import os, sys
-import torch.optim as optim
-import copy
+from mask_to_submission import *
+from PIL import Image
+import skimage.io as io 
 ################################ HELPERS ####################################
 def value_to_class(v):
     foreground_threshold = 0.25  # percentage of pixels > 1 required to assign a foreground label to a patch
@@ -39,14 +36,26 @@ def img_crop(im, w, h):
             list_patches.append(im_patch)
     return list_patches
 
+def label_to_img(imgwidth, imgheight, w, h, labels):
+    """Convert array of labels to an image"""
+    array_labels = numpy.zeros([imgwidth, imgheight])
+    idx = 0
+    for i in range(0, imgheight, h):
+        for j in range(0, imgwidth, w):
+            if labels[idx][0] > 0.5:  # bgrd
+                l = 0
+            else:
+                l = 1
+            array_labels[j:j+w, i:i+h] = l
+            idx = idx + 1
+    return array_labels
 
-
+################################# MAIN ########################################
 def main() :
     # Loading the data
     root_dir = "../data/training/"
     image_dir = root_dir + "images/"
     gt_dir = root_dir + "groundtruth/"
-    test_dir = "../data/test/"
 
     files = os.listdir(image_dir)
     print("Loading images")
@@ -120,6 +129,33 @@ def main() :
     f1 = f1_score(Y_val, Y_pred, average = 'micro')
 
     print('F1 score: {}\t accuracy 0: {}\t acuracy 1: {}'.format(f1, acc0, acc1))
+
+
+    # Test the model and generate a submission
+    test_dir = "../data/test_set_images/"
+    files_test = os.listdir(test_dir)
+    images_test = []
+    print("\nLoading test images")
+    images_test = np.asarray([mpimg.imread(test_dir + 'test_' + str(i+1) + '/test_' + str(i+1) + '.png') for i in range(len(files_test))])
+
+    img_patches_test = [img_crop(images_test[i], 16, 16) for i in range(len(files_test))]
+    img_patches_test = np.asarray([img_patches_test[i][j] for i in range(len(img_patches_test)) for j in range(len(img_patches_test[i]))])
+    X_test = np.asarray([extract_features_2d(img_patches_test[i]) for i in np.arange(len(img_patches_test))])
+
+    Y_test = clf.predict(X_test)
+
+    # Make a submission csv file
+    root_dir = "../outputs"
+    save_path = os.path.join(root_dir, 'binary_masks')
+    for i, x in enumerate(X_test):
+        mask = Y_test[i] #we can not convert cuda tensor into numpy
+        mask_path = os.path.join(save_path, '%.3d' % i + '.png')
+        io.imsave(mask_path, mask, check_contrast=False)
+        print('Prediction binary mask for test image {} is saved'.format(it))
+    print('\nYou can find all the test binary masks by following the path : {}'.format(save_path))
+    print('\nTransformation of the binary masks into a submission csv file...')
+    submission(save_path, root_dir)
+    print('\nYou can find the submission.csv file by following the path : {}'.format(root_dir))
 
 
 
