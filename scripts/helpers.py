@@ -79,7 +79,7 @@ def load_checkpoint(checkpoint_path, model, optimizer = None, scheduler = None):
 
 ############################ PLOTS ###################################
 def make_img_overlay(img, predicted_img):
-    img = img.permute(1, 2, 0)
+    #img = img.permute(1, 2, 0)
     w = img.shape[0]
     h = img.shape[1]
     color_mask = np.zeros((w, h, 3), dtype=np.uint8)
@@ -99,12 +99,11 @@ def concatenate_images(img, gt_img):
     if nChannels == 3:
         cimg = np.concatenate((img, gt_img), axis=1)
     else:
-        gt_img_3c = np.zeros((w, h, 4), dtype=np.uint8)
+        gt_img_3c = np.zeros((w, h, 3), dtype=np.uint8)
         gt_img8 = img_float_to_uint8(gt_img)
         gt_img_3c[:,:,0] = gt_img8
         gt_img_3c[:,:,1] = gt_img8
         gt_img_3c[:,:,2] = gt_img8
-        gt_img_3c[:,:,3] = gt_img8
         img8 = img_float_to_uint8(img)
         cimg = np.concatenate((img8, gt_img_3c), axis=1)
     return cimg

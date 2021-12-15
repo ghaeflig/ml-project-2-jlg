@@ -55,13 +55,15 @@ for batch_x in test_loader :
         print('Prediction binary mask for test image {} is saved'.format(it))
         # Make some plot if IMG_PLOTS = true
         if (IMG_PLOTS and it==IMG):
-            cimg_path = os.path.join(root_dir, 'result_ex%.3d' % IMG + '.png')
-            img_overlay =  make_img_overlay(batch_x[i], mask)
-            cimg = concatenate_images(img_overlay, mask)
+            cimg_path = os.path.join(root_dir, 'cimg%.3d' % IMG + '.png')
+            overlay_path = os.path.join(root_dir, 'overlay%.3d' % IMG + '.png')
+            img = batch_x[i].permute(1, 2, 0)
+            img_overlay =  make_img_overlay(img, mask)
+            io.imsave(overlay_path, np.asanyarray(img_overlay), check_contrast=False)
+            cimg = concatenate_images(img.cpu().detach().numpy(), mask)
             io.imsave(cimg_path, cimg, check_contrast=False)
-            #fig1 = plt.figure(figsize=(10, 10))
-            #plt.imshow(cimg, cmap='Greys_r')
-            print('Concatenated image with overlay and mask saved in {}\n'.format(cimg_path))
+            print('Concatenated image with satellite image and predicted mask for test image {}/50 saved in {}\n'.format(it,cimg_path))
+            print('Overlay image for test image {}/50 saved in {}\n'.format(it,overlay_path))
         it = it + 1
 
 
