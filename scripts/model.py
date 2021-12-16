@@ -3,6 +3,7 @@
 import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
+from train import DROPOUT
 
 
 class DoubleConv(nn.Module):
@@ -16,10 +17,13 @@ class DoubleConv(nn.Module):
                                   nn.BatchNorm2d(out_channels),
                                   nn.ReLU(inplace=True)
                                  )
+        self.dropout = nn.Dropout2d(p=DROPOUT)
 
     def forward(self, x):
-        return self.conv(x)
-
+        x = self.conv(x)
+        if DROPOUT > 0 :
+            x = self.dropout(x)
+        return x
 
 
 class UNET(nn.Module):

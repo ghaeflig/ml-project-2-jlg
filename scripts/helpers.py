@@ -85,7 +85,7 @@ def make_img_overlay(img, predicted_img):
     color_mask = np.zeros((w, h, 3), dtype=np.uint8)
     color_mask[:, :, 0] = predicted_img*255
 
-    img8 = img_float_to_uint8(img.detach().numpy())
+    img8 = img_float_to_uint8(img.cpu().detach().numpy())
     background = Image.fromarray(img8, 'RGB').convert("RGBA")
     overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
     new_img = Image.blend(background, overlay, 0.2)
