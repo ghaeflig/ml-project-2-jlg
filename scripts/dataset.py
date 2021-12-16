@@ -5,6 +5,9 @@ from torch.utils.data import Dataset
 #from helpers import value_to_class
 #from data_augmentation import transform
 
+SEED = 66478
+torch.manual_seed(SEED)
+
 class ImgDataset(Dataset):
     """ Dataset loader
     train or validation mode
