@@ -102,8 +102,8 @@ def training(train_loader, val_loader, print_err=True) :
     model = UNET().to(DEVICE) 
     criterion = IoULoss().to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-    #scheduler = None
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.4, patience=8, verbose=True) # scheduler reduces learning rate when a metric has stopped improving
+    scheduler = None
+    #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.4, patience=8, verbose=True) # scheduler reduces learning rate when a metric has stopped improving
     #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.4, patience=5, verbose=True)
     writer = SummaryWriter() # folder location: runs/May04_22-14-54_s-MacBook-Pro.comment/ comment=''
 
@@ -117,7 +117,7 @@ def training(train_loader, val_loader, print_err=True) :
         accuracy_val, f1_val = train_val(val_loader, model, epoch)
 
         # Updating the scheduler
-        scheduler.step(f1_val) 
+        #scheduler.step(f1_val) 
         #scheduler.step(train_loss)
 
         # Printing the training and validation errors
