@@ -3,11 +3,10 @@
 import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
-from train import DROPOUT
 
 
 class DoubleConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, dropout):
         super(DoubleConv, self).__init__()
         # 3 1 1 = kernel, stride, padding
         self.conv = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=True),
@@ -17,18 +16,19 @@ class DoubleConv(nn.Module):
                                   nn.BatchNorm2d(out_channels),
                                   nn.ReLU(inplace=True)
                                  )
-        self.dropout = nn.Dropout2d(p=DROPOUT)
+        self.drop_proba = dropout
+        self.drop = nn.Dropout2d(p=dropout)
 
     def forward(self, x):
         x = self.conv(x)
-        if DROPOUT > 0 :
-            x = self.dropout(x)
+        if self.drop_proba > 0 :
+            x = self.drop(x)
         return x
 
 
 class UNET(nn.Module):
     def __init__(
-        self, in_channels=3, out_channels=1, features=[64, 128, 256, 512]
+        self, dropout=0, in_channels=3, out_channels=1, features=[64, 128, 256, 512]
     ):
         super(UNET, self).__init__()
         self.ups = nn.ModuleList()
@@ -37,7 +37,7 @@ class UNET(nn.Module):
 
         #For the down part of UNET
         for feature in features:
-            self.downs.append(DoubleConv(in_channels, feature))
+            self.downs.append(DoubleConv(in_channels, feature, dropout))
             in_channels = feature
 
         #For the up part of UNET
@@ -46,10 +46,10 @@ class UNET(nn.Module):
                 nn.ConvTranspose2d(
                     feature*2, feature, kernel_size=2, stride=2)
                 )
-            self.ups.append(DoubleConv(feature*2, feature))
+            self.ups.append(DoubleConv(feature*2, feature, dropout))
 
         #For the bottom part of UNET
-        self.bottleneck = DoubleConv(features[-1], features[-1]*2)
+        self.bottleneck = DoubleConv(features[-1], features[-1]*2, dropout)
 
         #For the final part of UNET
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)

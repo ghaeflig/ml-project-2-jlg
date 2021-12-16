@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
 #from helpers import value_to_class
@@ -16,7 +17,7 @@ class ImgDataset(Dataset):
         self.mode = mode
         self.image_dir = image_dir
         self.gt_dir = gt_dir
-        self.transform = transform
+        #self.transform = transform
 
         #ids = [os.path.splitext(file)[0] for file in os.listdir(image_dir)]
         ids = [int(file[9:12]) for file in os.listdir(image_dir)]

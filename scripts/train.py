@@ -14,7 +14,7 @@ NUM_EPOCHS = 100
 BATCH_SIZE = 2 
 LEARNING_RATE = 5.5*1e-4
 WEIGHT_DECAY = 0
-DROPOUT = 0
+DROPOUT = 0.1
 OUTPUT_DIR = '../outputs'
 
 # Set the seed
@@ -90,7 +90,7 @@ def train_val(val_loader, model, epoch, device = DEVICE) :
 
 def training(train_loader, val_loader, print_err=True) :
     """ Training over all the epochs of a neurons network model (UNET)"""
-    print("\nStart training with {} epochs, batch size = {}, learning rate = {} and weight decay = {} ...".format(NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE, WEIGHT_DECAY))
+    print("\nStart training with {} epochs, batch size = {}, learning rate = {}, weight decay = {} and dropout probability = {}...".format(NUM_EPOCHS, BATCH_SIZE, LEARNING_RATE, WEIGHT_DECAY, DROPOUT))
     if not torch.cuda.is_available() :
         print("\nThings will go much quicker if you enable a GPU in Colab under 'Runtime / Change Runtime Type'")
     else :
@@ -99,7 +99,7 @@ def training(train_loader, val_loader, print_err=True) :
     max_f1 = 0
 
     # Intialisation of the model, criterion, optimizer and scheduler
-    model = UNET().to(DEVICE) 
+    model = UNET(dropout=DROPOUT).to(DEVICE) 
     criterion = IoULoss().to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     scheduler = None
