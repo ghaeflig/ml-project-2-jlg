@@ -6,7 +6,7 @@ from sklearn.metrics import f1_score, accuracy_score
 from sklearn.neural_network import MLPClassifier
 from mask_to_submission import *
 from PIL import Image
-import skimage.io as io 
+import skimage.io as io
 ################################ HELPERS ####################################
 def value_to_class(v):
     foreground_threshold = 0.25  # percentage of pixels > 1 required to assign a foreground label to a patch
@@ -21,6 +21,11 @@ def extract_features_2d(img):
     feat_v = np.var(img)
     feat = np.append(feat_m, feat_v)
     return feat
+
+def extract_img_features(img):
+    img_patches = img_crop(img, 16, 16)
+    X = np.asarray([ extract_features_2d(img_patches[i]) for i in range(len(img_patches))])
+    return X
 
 def img_crop(im, w, h):
     list_patches = []
@@ -38,17 +43,13 @@ def img_crop(im, w, h):
 
 def label_to_img(imgwidth, imgheight, w, h, labels):
     """Convert array of labels to an image"""
-    array_labels = numpy.zeros([imgwidth, imgheight])
+    im = np.zeros([imgwidth, imgheight])
     idx = 0
-    for i in range(0, imgheight, h):
-        for j in range(0, imgwidth, w):
-            if labels[idx][0] > 0.5:  # bgrd
-                l = 0
-            else:
-                l = 1
-            array_labels[j:j+w, i:i+h] = l
+    for i in range(0,imgheight,h):
+        for j in range(0,imgwidth,w):
+            im[j:j+w, i:i+h] = labels[idx]
             idx = idx + 1
-    return array_labels
+    return im
 
 ################################# MAIN ########################################
 def main() :
@@ -116,7 +117,6 @@ def main() :
                     verbose=False,
                     learning_rate_init=1e-4,
                     learning_rate = 'adaptive')
-
     clf.fit(X_train, Y_train)
 
 
@@ -127,7 +127,9 @@ def main() :
     acc0 = accuracy_score(Y_val[:,0], Y_pred[:,0])
     acc1 = accuracy_score(Y_val[:,1], Y_pred[:,1])
     f1 = f1_score(Y_val, Y_pred, average = 'micro')
-
+    #TESTS: 
+    print(np.sum(Y_val[:,0]==Y_pred[:,0])/Y_val.shape[0])
+    print(np.sum(Y_val[:,1]==Y_pred[:,1])/Y_val.shape[0])
     print('F1 score: {}\t accuracy 0: {}\t acuracy 1: {}'.format(f1, acc0, acc1))
 
 
@@ -138,20 +140,32 @@ def main() :
     print("\nLoading test images")
     images_test = np.asarray([mpimg.imread(test_dir + 'test_' + str(i+1) + '/test_' + str(i+1) + '.png') for i in range(len(files_test))])
 
-    img_patches_test = [img_crop(images_test[i], 16, 16) for i in range(len(files_test))]
-    img_patches_test = np.asarray([img_patches_test[i][j] for i in range(len(img_patches_test)) for j in range(len(img_patches_test[i]))])
-    X_test = np.asarray([extract_features_2d(img_patches_test[i]) for i in np.arange(len(img_patches_test))])
+    #img_patches_test = [img_crop(images_test[i], 16, 16) for i in range(len(files_test))]
+    #img_patches_test = np.asarray([img_patches_test[i][j] for i in range(len(img_patches_test)) for j in range(len(img_patches_test[i]))])
+    #X_test = np.asarray([extract_features_2d(img_patches_test[i]) for i in np.arange(len(img_patches_test))])
 
-    Y_test = clf.predict(X_test)
+    #Y_test = clf.predict(X_test)
 
-    # Make a submission csv file
+    # For each test image, make the patches, do the prediction and save the mask
     root_dir = "../outputs"
     save_path = os.path.join(root_dir, 'binary_masks')
-    for i, x in enumerate(X_test):
-        mask = Y_test[i] #we can not convert cuda tensor into numpy
-        mask_path = os.path.join(save_path, '%.3d' % i + '.png')
+    if not os.path.isdir(save_path) :
+    	os.mkdir(save_path)
+    h = images_test[1].shape[1]
+    w = images_test[1].shape[0]
+
+    for i, x in enumerate(images_test):
+        X_test = extract_img_features(x)
+        Y_test = clf.predict(X_test)
+        #a = np.floor(i*(w*h)/16).astype('int32')
+        #b = np.floor((i+1)*(w*h)/16).astype('int32')
+        #Yi = Y_test[a:b, 1]
+        mask = label_to_img(w, h, 16, 16, Y_test[:, 1])
+        mask_path = os.path.join(save_path, '%.3d' % (i+1) + '.png')
         io.imsave(mask_path, mask, check_contrast=False)
-        print('Prediction binary mask for test image {} is saved'.format(it))
+        print('Prediction binary mask for test image {} is saved'.format(i))
+
+    # Make a submission csv file
     print('\nYou can find all the test binary masks by following the path : {}'.format(save_path))
     print('\nTransformation of the binary masks into a submission csv file...')
     submission(save_path, root_dir)
