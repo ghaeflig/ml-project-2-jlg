@@ -13,8 +13,8 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 NUM_EPOCHS = 100 
 BATCH_SIZE = 2 
 LEARNING_RATE = 5.5*1e-4
-WEIGHT_DECAY = 0
-DROPOUT = 0.1
+WEIGHT_DECAY = 1e-6
+DROPOUT = 0
 OUTPUT_DIR = '../outputs'
 
 # Set the seed
