@@ -9,6 +9,7 @@ from PIL import Image
 import skimage.io as io
 ################################ HELPERS ####################################
 def value_to_class(v):
+    """Assign a label to a patch v"""
     foreground_threshold = 0.25  # percentage of pixels > 1 required to assign a foreground label to a patch
     df = np.sum(v)
     if df > foreground_threshold:  # road
@@ -16,18 +17,8 @@ def value_to_class(v):
     else:  # bgrd
         return [1, 0]
 
-def extract_features_2d(img):
-    feat_m = np.mean(img)
-    feat_v = np.var(img)
-    feat = np.append(feat_m, feat_v)
-    return feat
-
-def extract_img_features(img):
-    img_patches = img_crop(img, 16, 16)
-    X = np.asarray([ extract_features_2d(img_patches[i]) for i in range(len(img_patches))])
-    return X
-
 def img_crop(im, w, h):
+    """Extract patches from a given image"""
     list_patches = []
     imgwidth = im.shape[0]
     imgheight = im.shape[1]
@@ -40,6 +31,19 @@ def img_crop(im, w, h):
                 im_patch = im[j:j+w, i:i+h, :]
             list_patches.append(im_patch)
     return list_patches
+
+def extract_features_2d(img):
+    """Extract mean and variance from an image"""
+    feat_m = np.mean(img)
+    feat_v = np.var(img)
+    feat = np.append(feat_m, feat_v)
+    return feat
+
+def extract_img_features(img):
+    """Extract mean and variance from a patch-wise (16x16) image"""
+    img_patches = img_crop(img, 16, 16)
+    X = np.asarray([ extract_features_2d(img_patches[i]) for i in range(len(img_patches))])
+    return X
 
 def label_to_img(imgwidth, imgheight, w, h, labels):
     """Convert array of labels to an image"""

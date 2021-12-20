@@ -8,7 +8,7 @@ from PIL import Image
 
 ############################ PREPROCESSING ###########################################
 def value_to_class(v, foreground_threshold):
-    """ Get a one-hot vector for the classes """
+    """Get a one-hot vector for the classes"""
     df = np.sum(v)
     if df > foreground_threshold:
         return 1
@@ -41,12 +41,14 @@ class IoULoss(torch.nn.Module):
         return 1 - IoU
 
 def check_accuracy(pred, y, batch_size=BATCH_SIZE):
+    """Calculate accuracy on patches (16x16) of images"""
     pred = (pred > 0.5).float()
     patch_pred = [img_crop(pred[i].cpu().detach().numpy(), 16, 16) for i in range(batch_size)]
     patch_y = [img_crop(y[i].cpu().detach().numpy(), 16, 16) for i in range(batch_size)]
     return accuracy_score(np.array(patch_y).ravel(), np.array(patch_pred).ravel())
 
 def check_f1(pred, y, batch_size=BATCH_SIZE):
+    """Calculate F1 score on patches (16x16) of images"""
     pred = (pred > 0.5).float()
     patch_pred = [img_crop(pred[i].cpu().detach().numpy(), 16, 16) for i in range(batch_size)]
     patch_y = [img_crop(y[i].cpu().detach().numpy(), 16, 16) for i in range(batch_size)]
@@ -55,6 +57,7 @@ def check_f1(pred, y, batch_size=BATCH_SIZE):
 
 ############################# CHECKPOINTS ###########################################
 def save_checkpoint(save_path, epoch, model, optimizer, scheduler) :
+    """Save checkpoints of the best model during training"""
     print("=> Saving checkpoint")
     saved_scheduler = None
     if scheduler is not None:
@@ -64,6 +67,7 @@ def save_checkpoint(save_path, epoch, model, optimizer, scheduler) :
 
 
 def load_checkpoint(checkpoint_path, model, optimizer = None, scheduler = None):
+    """Load checkpoints from an already trained model"""
     if not os.path.exists(checkpoint_path):
         print("The requested file ({}) does not exist ; the checkpoint can not be loaded".format(checkpoint_path))
     else :
@@ -79,7 +83,7 @@ def load_checkpoint(checkpoint_path, model, optimizer = None, scheduler = None):
 
 ############################ PLOTS ###################################
 def make_img_overlay(img, predicted_img):
-    #img = img.permute(1, 2, 0)
+    """Create an image of the satellite image with its predicted mask in overlay"""
     w = img.shape[0]
     h = img.shape[1]
     color_mask = np.zeros((w, h, 3), dtype=np.uint8)
@@ -92,7 +96,7 @@ def make_img_overlay(img, predicted_img):
     return new_img
 
 def concatenate_images(img, gt_img):
-    """ Concatenate an image and its groundtruth or prediction"""
+    """Concatenate an image and its groundtruth or prediction"""
     nChannels = len(gt_img.shape)
     w = gt_img.shape[0]
     h = gt_img.shape[1]
@@ -109,12 +113,13 @@ def concatenate_images(img, gt_img):
     return cimg
 
 def img_float_to_uint8(img) :
-    """transform img from float to uint8"""
+    """Transform img from float to uint8"""
     rimg = img - np.min(img)
     rimg = (rimg / np.max(rimg) * 255).round().astype(np.uint8)
     return rimg
 
 def img_crop(im, w, h):
+    """Extract patches from a given image"""
     list_patches = []
     imgwidth = im.shape[0]
     imgheight = im.shape[1]
