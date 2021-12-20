@@ -49,7 +49,7 @@ def test():
     print(f'Loading {len(ids)} samples')
     nb_rot = 0
     print('Performing data augmentation')
-    for i in np.arange(len(ids)-1):
+    for i in np.arange(len(ids)):
         image_path = os.path.join(image_dir, images[i])
         gt_path = os.path.join(gt_dir, images[i])
         image = np.array(Image.open(image_path).convert("RGB"))

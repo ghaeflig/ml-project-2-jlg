@@ -33,7 +33,7 @@ def test():
     gts = os.listdir(gt_dir)
     print(f'Loading {len(ids)} samples')
     print('Performing data augmentation')
-    for i in np.arange(len(ids)-1):
+    for i in np.arange(len(ids)):
         image_path = os.path.join(image_dir, images[i])
         gt_path = os.path.join(gt_dir, images[i])
         image = np.array(Image.open(image_path).convert("RGB"))
@@ -47,7 +47,7 @@ def test():
         rotGt.save(gt_dir+"/rotImage_"+"{:03}".format(augm_idx)+".png", "PNG")
         augm_idx += 1
 
-    print("{nb} rotated images and groundtruths saved".format(nb=augm_idx-100))
+    print("{nb} rotated images and groundtruths saved".format(nb=augm_idx-1-100))
     print("Data augmentation finished - {nb} added samples".format(nb=augm_idx-100))
 
 if __name__ == "__main__":
