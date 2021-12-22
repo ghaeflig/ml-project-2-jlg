@@ -52,7 +52,7 @@ If you want to train the model by yourself :
 	* the predicted binary masks of the test data.
 4. If [TensorBoard](https://pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html) is installed, training loss/scores and validation scores can be visualized. To use Tensorboard, run: `tensorboard --logdir=runs`
 5. If you want to retrain a model with the augmented data, you can do it : `python3 train.py`
-6. However, if you want to retrain the model only on the original data, you have to delete the current training folder in `'./data/'` and unzip the given training.zip. Then, you have to set `LOAD_DATA_AUG` to false at the beginning of the `'train.py'` file and after that, you can launch the command : `python3 train.py`.
+6. If you want to retrain the model only on the original data, you have to delete the current training folder in `'./data/'` and unzip the given training.zip. Then, you have to set `LOAD_DATA_AUG` to false at the beginning of the `'train.py'` file and after that, you can launch the command : `python3 train.py`.
 
 You can also tune a new model by changing the parameters in bold at the beginning of `'train.py'` before running it. 
 
