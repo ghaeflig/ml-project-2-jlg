@@ -1,3 +1,5 @@
+# Baseline model based on https://github.com/epfml/ML_course/blob/master/projects/project2/project_road_segmentation/tf_aerial_images.py
+
 import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +9,7 @@ from sklearn.neural_network import MLPClassifier
 from mask_to_submission import *
 from PIL import Image
 import skimage.io as io
+
 ################################ HELPERS ####################################
 def value_to_class(v):
     """Assign a label to a patch v"""
@@ -144,12 +147,6 @@ def main() :
     print("\nLoading test images")
     images_test = np.asarray([mpimg.imread(test_dir + 'test_' + str(i+1) + '/test_' + str(i+1) + '.png') for i in range(len(files_test))])
 
-    #img_patches_test = [img_crop(images_test[i], 16, 16) for i in range(len(files_test))]
-    #img_patches_test = np.asarray([img_patches_test[i][j] for i in range(len(img_patches_test)) for j in range(len(img_patches_test[i]))])
-    #X_test = np.asarray([extract_features_2d(img_patches_test[i]) for i in np.arange(len(img_patches_test))])
-
-    #Y_test = clf.predict(X_test)
-
     # For each test image, make the patches, do the prediction and save the mask
     root_dir = "../outputs"
     save_path = os.path.join(root_dir, 'binary_masks')
@@ -161,9 +158,6 @@ def main() :
     for i, x in enumerate(images_test):
         X_test = extract_img_features(x)
         Y_test = clf.predict(X_test)
-        #a = np.floor(i*(w*h)/16).astype('int32')
-        #b = np.floor((i+1)*(w*h)/16).astype('int32')
-        #Yi = Y_test[a:b, 1]
         mask = label_to_img(w, h, 16, 16, Y_test[:, 1])
         mask_path = os.path.join(save_path, '%.3d' % (i+1) + '.png')
         io.imsave(mask_path, mask, check_contrast=False)

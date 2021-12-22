@@ -15,6 +15,21 @@ def value_to_class(v, foreground_threshold):
     else:
         return 0
 
+def img_crop(im, w, h):
+    """Extract patches from a given image"""
+    list_patches = []
+    imgwidth = im.shape[0]
+    imgheight = im.shape[1]
+    is_2d = len(im.shape) < 3
+    for i in range(0,imgheight,h):
+        for j in range(0,imgwidth,w):
+            if is_2d:
+                im_patch = im[j:j+w, i:i+h]
+            else:
+                im_patch = im[j:j+w, i:i+h, :]
+            list_patches.append(im_patch)
+    return list_patches
+
 ############################ MODEL EVALUATION PERFORMANCE ############################
 class IoULoss(torch.nn.Module):
     """Jaccard loss based on https://www.kaggle.com/bigironsphere/loss-function-library-keras-pytorch"""
@@ -22,9 +37,6 @@ class IoULoss(torch.nn.Module):
         super(IoULoss, self).__init__()
 
     def forward(self, inputs, targets, smooth=1):
-
-        #comment out if your model contains a sigmoid or equivalent activation layer
-        #inputs = torch.sigmoid(inputs)
 
         #flatten label and prediction tensors
         inputs = inputs.view(-1)
@@ -82,6 +94,12 @@ def load_checkpoint(checkpoint_path, model, optimizer = None, scheduler = None):
 
 
 ############################ PLOTS ###################################
+def img_float_to_uint8(img) :
+    """Transform img from float to uint8"""
+    rimg = img - np.min(img)
+    rimg = (rimg / np.max(rimg) * 255).round().astype(np.uint8)
+    return rimg
+
 def make_img_overlay(img, predicted_img):
     """Create an image of the satellite image with its predicted mask in overlay"""
     w = img.shape[0]
@@ -112,23 +130,4 @@ def concatenate_images(img, gt_img):
         cimg = np.concatenate((img8, gt_img_3c), axis=1)
     return cimg
 
-def img_float_to_uint8(img) :
-    """Transform img from float to uint8"""
-    rimg = img - np.min(img)
-    rimg = (rimg / np.max(rimg) * 255).round().astype(np.uint8)
-    return rimg
 
-def img_crop(im, w, h):
-    """Extract patches from a given image"""
-    list_patches = []
-    imgwidth = im.shape[0]
-    imgheight = im.shape[1]
-    is_2d = len(im.shape) < 3
-    for i in range(0,imgheight,h):
-        for j in range(0,imgwidth,w):
-            if is_2d:
-                im_patch = im[j:j+w, i:i+h]
-            else:
-                im_patch = im[j:j+w, i:i+h, :]
-            list_patches.append(im_patch)
-    return list_patches

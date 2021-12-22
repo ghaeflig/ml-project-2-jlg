@@ -20,7 +20,6 @@ OUTPUT_DIR = '../outputs'
 # Set the seed
 torch.manual_seed(SEED) 
 
-
 def train_func(train_loader, model, epoch, criterion, optimizer, device=DEVICE) :
     """ Training loop on one epoch for a neurons network model (in our case UNET). The function returns the mean
     training loss error, the training mean accuracy and the training mean f1 score over all batches """
@@ -29,15 +28,15 @@ def train_func(train_loader, model, epoch, criterion, optimizer, device=DEVICE) 
     accuracies = 0
     f1_sum = 0
     it = 0
-    for batch_x, batch_y in train_loader: #batch_x = train images and batch_y = train masks (groundtruth)
+    for batch_x, batch_y in train_loader: #batch_x = train satellite images and batch_y = train masks (groundtruth)
         print("it num for train func : {} / {}.".format(it, len(train_loader)-1))
-        batch_x = batch_x.permute(0, 3, 1, 2).float() # from [8,400,400,3] to [8,3,400,400] for suit the size in the model
+        batch_x = batch_x.permute(0, 3, 1, 2).float() #from [8,400,400,3] to [8,3,400,400] to suit the size in the model
         batch_x, batch_y = batch_x.to(device), batch_y.to(device)
 
         # Evaluate the network (forward pass)
         pred = model(batch_x)
-        pred = pred.squeeze(1) #[8,1,400,400] to [8,400,400] to have the same size as batch_y
-        pred = torch.sigmoid(pred) #if binary cross entropy with logits loss, do sigmoid after the loss calulation
+        pred = pred.squeeze(1) #from [8,1,400,400] to [8,400,400] to have the same size as batch_y
+        pred = torch.sigmoid(pred) 
         
         # Compute the loss, the errors and the gradient
         loss = criterion(pred, batch_y) 
@@ -46,7 +45,7 @@ def train_func(train_loader, model, epoch, criterion, optimizer, device=DEVICE) 
         f1_sum += check_f1(pred, batch_y)
         optimizer.zero_grad()
 
-        # Backward  pass
+        # Backward pass
         loss.backward()
 
         # Update the parameters of the model with a gradient step
@@ -55,7 +54,7 @@ def train_func(train_loader, model, epoch, criterion, optimizer, device=DEVICE) 
         # Adding an iteration
         it = it + 1
 
-    # Compute the mean errors along the batch
+    # Compute the mean errors along the train batch
     train_loss = train_loss / len(train_loader)
     accuracy_mean = accuracies / len(train_loader)
     f1_mean = f1_sum / len(train_loader)
@@ -65,7 +64,7 @@ def train_func(train_loader, model, epoch, criterion, optimizer, device=DEVICE) 
 
 def train_val(val_loader, model, epoch, device = DEVICE) :
     """ Validation loop on one epoch for a neurons network model (in our case UNET). 
-    The function returns validation mean accuracy and the  validation mean f1 score 
+    The function returns validation mean accuracy and the validation mean f1 score 
     over all batches """
     model.eval()
     accuracies = 0
@@ -83,6 +82,7 @@ def train_val(val_loader, model, epoch, device = DEVICE) :
             f1_sum += check_f1(pred, batch_y)
             it = it + 1
 
+    # Compute the mean errors along the validation batch
     accuracy_mean = accuracies/len(val_loader)
     f1_mean = f1_sum / len(val_loader)
     return accuracy_mean, f1_mean
@@ -103,9 +103,8 @@ def training(train_loader, val_loader, print_err=True) :
     criterion = IoULoss().to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     scheduler = None
-    #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.4, patience=8, verbose=True) # scheduler reduces learning rate when a metric has stopped improving
-    #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.4, patience=5, verbose=True)
-    writer = SummaryWriter() # folder location: runs/May04_22-14-54_s-MacBook-Pro.comment/ comment=''
+    #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.4, patience=8, verbose=True) 
+    writer = SummaryWriter() #folder location: runs/May04_22-14-54_s-MacBook-Pro.comment/
 
     for epoch in range(NUM_EPOCHS):
         print("\nEpoch : {} / {}".format(epoch, NUM_EPOCHS-1))
@@ -131,7 +130,7 @@ def training(train_loader, val_loader, print_err=True) :
             max_f1_epoch = copy.deepcopy(epoch)
             save_checkpoint(OUTPUT_DIR, epoch, model, optimizer, scheduler)
 
-        # Using summuray writer library to have plots
+        # Using summary writer library to have plots
         if writer is not None :
             writer.add_scalar('Train loss / epoch', train_loss, epoch)
             writer.add_scalars('F1 score / epoch', {'TrainF1':f1_train,'ValF1': f1_val}, epoch)
@@ -152,6 +151,7 @@ def main() :
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
 
+    # Training
     training(train_loader, val_loader)
 
 
