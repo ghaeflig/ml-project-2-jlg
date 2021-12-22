@@ -10,7 +10,7 @@ from train import DEVICE, BATCH_SIZE, OUTPUT_DIR, SEED
 
 torch.manual_seed(SEED)
 
-IMG_PLOTS = True #save one test image with overlay and a concatenated image of the satellite test image with its prediction mask
+IMG_PLOTS = False #save one test image with overlay and a concatenated image of the satellite test image with its prediction mask
 IMG = 1 #index of the image saved, can be between 1 and 50
 
 print('\nStart running...')

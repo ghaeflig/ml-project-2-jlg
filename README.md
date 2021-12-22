@@ -2,7 +2,7 @@
 
 `Team Members` : Julia Wälti, Louis-Alexandre Ongaro, Garance Haefliger
 
-The goal of this project is to detect roads from a satellite images dataset. We trained a Unet, a typical image segmentation algorithm with some additional tools such as data augmentation, regularization, dropout to increase the efficiency of the model. Our best result is 0.000 F1 score on AICrowd (submission ID : ).
+The goal of this project is to detect roads from a satellite images dataset. We trained a Unet, a typical image segmentation algorithm with some additional tools such as data augmentation, regularization, dropout to increase the efficiency of the model. Our best result is 0.872 F1 score with an accuracy of 0.927 on AICrowd (submission ID : 169096).
 
 
 ## Requirements
@@ -13,7 +13,8 @@ All project was implemented with python 3.8. You will also require the following
 * skimage
 * Pillow
 * cv2
-* The basic packages : numpy, scipy, os, sys, random, matplotlib, re, copy
+* tensorboard (torch.utils.tensorboard)
+* The basic packages : numpy, scipy, os, sys, random, matplotlib, re, copy, matplotlib
 
 
 ## Structure
@@ -37,7 +38,7 @@ The current directory for this project is `'your_path/ml-project-2-jlg_project2/
 
 If you want to get the results from our pretrained model :
 1. You have to unzip the two zip files in directory `'./data/'` ; it is the training and test data.
-2. Then, you can download our pretrained model [link](aremplir!!!) ; you have to unzip the files and place it in in the directory `'./outputs/'`
+2. Then, you can download our pretrained model [link](https://drive.google.com/file/d/1tCJs0LqV1BapljetbS_ztGNu2VPYrDZE/view?usp=sharing) ; you have to unzip the files and place it in in the directory `'./outputs/'`
 3. Finally, you can run the command : `python3 run.py` in the terminal by taking care that the mentioned current directory. In `'./outputs/'` directory, you will find the `'submission.csv'` files that can be upload on AICrowd to get the F1 score and accuracy on the test set and the predicted binary masks of the test data.
 
 If you want to train the model by yourself :
@@ -55,7 +56,7 @@ Please be concern that you have to run our model on a **GPU**, otherwise it will
 
 
 
-
+Rajouter comment faire pour laod date augmentation
 
 
 
