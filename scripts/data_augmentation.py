@@ -42,7 +42,7 @@ class DataAugm():
         img_noisy = img_noisy.astype(np.uint8)
         return img_noisy
 
-def test():
+def augmentation():
     root_dir = "../data/training/"
     image_dir = root_dir + "images/"
     gt_dir = root_dir + "groundtruth/"
@@ -98,8 +98,5 @@ def test():
     print("{nb} rotated images and groundtruths saved".format(nb=nb_rot))
     print("{nb} flipped images and groundtruths saved".format(nb=nb_fli))
     print("{nb} noisy images and groundtruths saved".format(nb=nb_noi))
-    print("Data augmentation finished - {nb} added samples".format(nb=augm_idx-100))
+    print("Data augmentation finished - {nb} added samples\n".format(nb=augm_idx-100))
 
-
-if __name__ == "__main__":
-    test()

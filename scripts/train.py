@@ -6,6 +6,7 @@ import copy
 from dataset import ImgDataset 
 from helpers import *
 from model import UNET
+from data_augmentation import augmentation
 from torch.utils.tensorboard import SummaryWriter 
 
 SEED = 66478
@@ -16,6 +17,7 @@ LEARNING_RATE = 5.5*1e-4
 WEIGHT_DECAY = 1e-7
 DROPOUT = 0.25
 OUTPUT_DIR = '../outputs'
+LOAD_DATA_AUG = True  #loading the data augmentation from the original training data set
 
 # Set the seed
 torch.manual_seed(SEED) 
@@ -146,6 +148,11 @@ def main() :
     root_dir = "../data/training/"
     image_dir = root_dir + "images/"
     gt_dir = root_dir + "groundtruth/"
+
+    # Data augmentation 
+    if LOAD_DATA_AUG and (len(os.listdir(image_dir)) == 100) :
+        augmentation()
+
     train_set = ImgDataset(image_dir, gt_dir, split_ratio=0.8, mode="train")
     val_set = ImgDataset(image_dir, gt_dir, split_ratio=0.8, mode="val")
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True)
