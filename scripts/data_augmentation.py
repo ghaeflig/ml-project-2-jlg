@@ -14,14 +14,21 @@ class DataAugm():
         self.gt = gt
 
     def rotation(degree, image, gt):
-        "Returns the rotated original image and groundtruth. degree shoudl be in degrees"
+        "Returns the rotated original image and groundtruth, degree should be in degrees"
         img_rot = ndimage.rotate(image, degree, reshape=False, mode='reflect')
         gt_rot = ndimage.rotate(gt, degree, reshape=False, mode='reflect')
         return img_rot, gt_rot
 
+    # flipping
+    def flip(image, gt):
+        "Returns the flipped original image and groundtruth"
+        img_flip = np.flip(image, 1)
+        gt_flip = np.flip(gt, 1)
+        return img_flip, gt_flip
+
     # gaussian noise
     def gaussian_noise(image):
-        "Returns the original image and groundtruth with added gaussian noise"
+        "Returns the original image with added gaussian noise"
         mean = 0
         var = 5
         sigma = np.std(image)
@@ -50,6 +57,7 @@ def test():
     print(f'Loading {len(ids)} samples')
     nb_rot = 0
     nb_noi = 0
+    nb_fli = 0
     print('Performing data augmentation')
     for i in np.arange(len(ids)):
         image_path = os.path.join(image_dir, images[i])
@@ -57,19 +65,27 @@ def test():
         image = np.array(Image.open(image_path).convert("RGB"))
         gt = np.array(Image.open(gt_path).convert("L"), dtype=np.float32)
 
-        if (i%2):
-            # for each image, creation of 1 random rotated images
-            augm_idx += 1
-            nb_rot +=1
-            deg = np.random.rand()*280 + 40 #random degree between 40 and 320 degrees
-            rotImage, rotGt = DataAugm.rotation(deg, image, gt)
-            rotImage = Image.fromarray(rotImage).convert('RGB')
-            rotGt = Image.fromarray(rotGt).convert('RGB')
-            rotImage.save(image_dir+"/rotImage_"+"{:03}".format(augm_idx)+".png", "PNG")
-            rotGt.save(gt_dir+"/rotImage_"+"{:03}".format(augm_idx)+".png", "PNG")
+        # for each image, creation of 1 random rotated images
+        augm_idx += 1
+        nb_rot +=1
+        deg = np.random.rand()*280 + 40 #random degree between 40 and 320 degrees
+        rotImage, rotGt = DataAugm.rotation(deg, image, gt)
+        rotImage = Image.fromarray(rotImage).convert('RGB')
+        rotGt = Image.fromarray(rotGt).convert('RGB')
+        rotImage.save(image_dir+"/rotImage_"+"{:03}".format(augm_idx)+".png", "PNG")
+        rotGt.save(gt_dir+"/rotImage_"+"{:03}".format(augm_idx)+".png", "PNG")
 
-        else:
-            # for each image, creation of 1 image with added noise
+        # for each image, creation of the flipped version
+        augm_idx +=1
+        nb_fli +=1
+        fliImage, fliGt = DataAugm.flip(image, gt)
+        fliImage = Image.fromarray(fliImage).convert('RGB')
+        fliGt = Image.fromarray(fliGt).convert('RGB')
+        fliImage.save(image_dir+"/fliImage_"+"{:03}".format(augm_idx)+".png", "PNG")
+        fliGt.save(gt_dir+"/fliImage_"+"{:03}".format(augm_idx)+".png", "PNG")
+
+        # for one in two images, creation of 1 image with added noise
+        if (i%2):
             augm_idx +=1
             nb_noi +=1
             noiImage = DataAugm.gaussian_noise(image)
@@ -79,10 +95,11 @@ def test():
             noiGt.save(gt_dir+"/noiImage_"+"{:03}".format(augm_idx)+".png", "PNG")
 
 
-
     print("{nb} rotated images and groundtruths saved".format(nb=nb_rot))
+    print("{nb} flipped images and groundtruths saved".format(nb=nb_fli))
     print("{nb} noisy images and groundtruths saved".format(nb=nb_noi))
     print("Data augmentation finished - {nb} added samples".format(nb=augm_idx-100))
+
 
 if __name__ == "__main__":
     test()
